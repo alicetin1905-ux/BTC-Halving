@@ -142,6 +142,9 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .al-tg summary{cursor:pointer;color:var(--color-fg-muted)}
 .al-log{margin:var(--cds-gap-sm) 0 0;padding-left:1.1rem;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
 #ind-chart{min-height:280px}
+.rb-name{font-weight:500}
+.rb-big{font-size:var(--cds-font-size-body);color:var(--color-fg)}
+.rb-tiles{margin-bottom:var(--cds-gap-sm)}
 </style>
 
 <script>
@@ -241,6 +244,29 @@ window.dash = (() => {
       <span><i class="sw proj" style="border-color:#a78bfa"></i>200-daags gem. (Mayer = prijs ÷ deze lijn)</span>
     </div>
     <div class="cy-chart" id="ind-chart"></div>
+  </section>
+
+  <section class="cy-card" id="rainbow">
+    <h2>Rainbowchart</h2>
+    <p class="cy-note">Een logaritmische regressielijn door de hele koershistorie, opgedeeld in 9 even brede banden. Live berekend uit de koersdata, dus de banden schuiven licht mee met nieuwe data. Een hulpmiddel om "duur" en "goedkoop" te zien, geen voorspelling.</p>
+    <div class="cy-tiles rb-tiles">
+      <div><div class="cy-lbl">Huidige band</div><div class="cy-num rb-name" id="rb-now">—</div><div class="cy-sub">Band vandaag: <span id="rb-range">—</span></div></div>
+      <div><div class="cy-lbl">Cyclustops lagen in</div><div class="cy-sub rb-big" id="rb-tops">—</div></div>
+      <div><div class="cy-lbl">Cyclusbodems lagen in</div><div class="cy-sub rb-big" id="rb-lows">—</div></div>
+      <div><div class="cy-lbl">"Accumuleren" t/m "HODL" bij halving 5</div><div class="cy-sub rb-big" id="rb-h5">—</div></div>
+    </div>
+    <div class="cy-legend rb-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:#d7263d"></i>Maximale bubbel</span>
+      <span><i class="sw" style="background:#f46036"></i>Verkopen</span>
+      <span><i class="sw" style="background:#f7931a"></i>FOMO neemt toe</span>
+      <span><i class="sw" style="background:#f9c80e"></i>Is dit een bubbel?</span>
+      <span><i class="sw" style="background:#a7c957"></i>HODL</span>
+      <span><i class="sw" style="background:#43aa8b"></i>Nog goedkoop</span>
+      <span><i class="sw" style="background:#2a9d8f"></i>Accumuleren</span>
+      <span><i class="sw" style="background:#277da1"></i>Kopen</span>
+      <span><i class="sw" style="background:#3d5a80"></i>Brandende uitverkoop</span>
+    </div>
+    <div class="cy-chart" id="rb-chart" style="min-height:320px"></div>
   </section>
 
   <section class="cy-card" id="fng">
@@ -1175,13 +1201,87 @@ window.hub = (() => {
     renderLog();
   };
 
-  const renderAll = () => { renderIndicators(); renderFng(); renderDca(); checkAlerts(); };
+  // ---- Rainbowchart: log-regressie log10(prijs) = a·ln(dagen sinds genesis) + b, 9 banden ----
+  const RB_NAMES = ['Brandende uitverkoop', 'Kopen', 'Accumuleren', 'Nog goedkoop', 'HODL', 'Is dit een bubbel?', 'FOMO neemt toe', 'Verkopen', 'Maximale bubbel'];
+  const RB_COLORS = ['#3d5a80', '#277da1', '#2a9d8f', '#43aa8b', '#a7c957', '#f9c80e', '#f7931a', '#f46036', '#d7263d'];
+  const GENESIS = Date.UTC(2009, 0, 3);
+  const lnDays = (t) => Math.log((t - GENESIS) / DAY);
+  let RB = null;
+  const fitRainbow = () => {
+    if (!S.daily) return null;
+    const real = S.daily.rows.filter((r) => r.close > 0);
+    // vóór het begin van de dagdata: de pivotpunten uit de cyclusdata aanvullen
+    const ev = (cy.rows() || []).filter((e) => e.price != null && !e.projectie && e.t.getTime() < real[0].t).map((e) => ({ t: e.t.getTime(), close: e.price }));
+    const pts = ev.concat(real.filter((r, i) => i % 7 === 0)).filter((r) => r.t > Date.UTC(2010, 6, 1));
+    const xs = pts.map((r) => lnDays(r.t)), ys = pts.map((r) => Math.log10(r.close));
+    const mx = d3.mean(xs), my = d3.mean(ys);
+    let sxy = 0, sxx = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; });
+    const a = sxy / sxx, b = my - a * mx;
+    const res = pts.filter((r) => r.t >= Date.UTC(2011, 0, 1)).map((r) => Math.log10(r.close) - (a * lnDays(r.t) + b)).sort(d3.ascending);
+    const lo = d3.quantileSorted(res, 0.005), hi = d3.quantileSorted(res, 0.995);
+    const step = (hi - lo) / 9;
+    const edge = (t, k) => Math.pow(10, a * lnDays(t) + b + lo + k * step); // k = 0..9
+    const bandOf = (t, p) => Math.max(0, Math.min(8, Math.floor((Math.log10(p) - (a * lnDays(t) + b) - lo) / step)));
+    return { a, b, lo, step, edge, bandOf, src: ev.length ? 'pivotpunten + dagkoers' : 'dagkoers' };
+  };
+  const renderRainbow = () => {
+    const el = $('rb-chart'); if (!el || !S.daily) return;
+    RB = fitRainbow(); if (!RB) return;
+    const rows = S.daily.rows.filter((r) => r.close > 0);
+    const P = livePrice(), nowT = Date.now();
+    const bNow = RB.bandOf(nowT, P);
+    const nm = $('rb-now'); if (nm) { nm.textContent = RB_NAMES[bNow]; nm.style.color = RB_COLORS[bNow]; }
+    setText('rb-range', `${usd(Math.round(RB.edge(nowT, bNow)))} – ${usd(Math.round(RB.edge(nowT, bNow + 1)))}`);
+    const ev = cy.rows() || [];
+    const inBand = (kind) => ev.filter((e) => e.kind === kind && e.price != null && e.cycle >= 1).map((e) => RB_NAMES[RB.bandOf(e.t.getTime(), e.price)]);
+    setText('rb-tops', [...new Set(inBand('top'))].join(', ') || '—');
+    setText('rb-lows', [...new Set(inBand('bodem'))].join(', ') || '—');
+    // over 1 jaar en bij de halving van 2028: de bandgrenzen
+    const h5 = ev.find((e) => e.id === 'halving5');
+    if (h5) setText('rb-h5', `${usd(Math.round(RB.edge(h5.t.getTime(), 2)))} – ${usd(Math.round(RB.edge(h5.t.getTime(), 5)))}`);
+
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 320 : 420);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
+    const t0 = Date.UTC(2010, 6, 1), t1 = Date.UTC(2030, 11, 31);
+    const x = d3.scaleUtc([new Date(t0), new Date(t1)], [ml, W - mr]);
+    const y = d3.scaleLog([0.03, RB.edge(t1, 9) * 1.2], [H - mb, mt]).clamp(true);
+    const grid = d3.range(t0, t1 + DAY, 30 * DAY);
+    const defs = svg.append('defs'); const cid = 'rbclip' + Math.random().toString(36).slice(2, 7);
+    defs.append('clipPath').attr('id', cid).append('rect').attr('x', ml).attr('y', mt).attr('width', W - mr - ml).attr('height', H - mb - mt);
+    const bands = svg.append('g').attr('clip-path', `url(#${cid})`);
+    d3.range(9).forEach((k) => {
+      bands.append('path').attr('fill', RB_COLORS[k]).attr('opacity', 0.55)
+        .attr('d', d3.area((t) => x(new Date(t)), (t) => y(RB.edge(t, k)), (t) => y(RB.edge(t, k + 1)))(grid));
+    });
+    const yt = logTicks(y);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('stroke-opacity', 0.35).attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d < 1 ? '$' + d : '$' + d3.format('~s')(d));
+    timeAxis(svg, x, W, H);
+    // halvings
+    ev.filter((e) => e.kind === 'halving').forEach((e) => {
+      const g = svg.append('g').attr('class', e.projectie ? 'cy-hv proj' : 'cy-hv');
+      g.append('line').attr('x1', x(e.t)).attr('x2', x(e.t)).attr('y1', mt).attr('y2', H - mb);
+    });
+    const firstReal = rows[0].t;
+    const pre = ev.filter((e) => e.price != null && !e.projectie && e.t.getTime() < firstReal).sort((p, q) => p.t - q.t);
+    if (pre.length) svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3')
+      .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))(pre.concat([{ t: new Date(firstReal), price: rows[0].close }])));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-width', 1.6).attr('stroke-linejoin', 'round')
+      .attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.close))(rows));
+    const marks = ev.filter((e) => (e.kind === 'top' || e.kind === 'bodem') && e.price != null);
+    svg.append('g').selectAll('circle').data(marks).join('circle').attr('class', (e) => 'cy-pt k-' + e.kind).attr('r', 4.5).attr('cx', (e) => x(e.t)).attr('cy', (e) => y(e.price));
+    svg.append('circle').attr('class', 'cy-pt k-nu').attr('r', 5).attr('cx', x(new Date(nowT))).attr('cy', y(P));
+    const hov = rows.filter((r, i) => i % 3 === 0 || i === rows.length - 1);
+    timeHover(el, svg, W, H, x, hov, (r) => { const k = RB.bandOf(r.t, r.close); return [day(r.t), `${usd(r.close)} · ${RB_NAMES[k]}`, `Band: ${usd(RB.edge(r.t, k))} – ${usd(RB.edge(r.t, k + 1))}`]; });
+  };
+
+  const renderAll = () => { renderIndicators(); renderRainbow(); renderFng(); renderDca(); checkAlerts(); };
 
   // start
   initAlerts();
   ['dca-amt', 'dca-from'].forEach((id) => { const el = $(id); if (el) el.addEventListener('input', renderDca); });
-  window.addEventListener('btcprice', () => { renderIndicators(); checkAlerts(); });
-  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderFng(); renderDca(); }, 150); });
+  window.addEventListener('btcprice', () => { renderIndicators(); renderRainbow(); checkAlerts(); });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFng(); renderDca(); }, 150); });
   loadDaily(); loadFng(); loadMem();
   setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);
   return { state: S };
