@@ -145,6 +145,15 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .rb-name{font-weight:500}
 .rb-big{font-size:var(--cds-font-size-body);color:var(--color-fg)}
 .rb-tiles{margin-bottom:var(--cds-gap-sm)}
+.fut-h{font-size:var(--cds-font-size-body);font-weight:var(--cds-font-weight-medium);margin:var(--cds-gap-xl) 0 0}
+.fut-tiles{margin:var(--cds-gap-sm) 0}
+.fut-big{font-size:var(--cds-font-size-body);color:var(--color-fg)}
+.fut-band{fill:color-mix(in srgb,var(--color-warn) 10%,transparent)}
+.fut-fair{fill:none;stroke:var(--color-warn);stroke-width:2}
+.fut-ceil{fill:none;stroke:var(--color-bad);stroke-width:1.8}
+.fut-floor{fill:none;stroke:var(--color-ok);stroke-width:1.8}
+.fut-target{fill:var(--color-warn);stroke:var(--color-panel);stroke-width:2}
+#pl-chart,#gh-chart,#lgc-chart{min-height:300px}
 </style>
 
 <script>
@@ -267,6 +276,46 @@ window.dash = (() => {
       <span><i class="sw" style="background:#3d5a80"></i>Brandende uitverkoop</span>
     </div>
     <div class="cy-chart" id="rb-chart" style="min-height:320px"></div>
+  </section>
+
+  <section class="cy-card" id="toekomst">
+    <h2>Toekomstmodellen</h2>
+    <p class="cy-note">Drie modellen die vooruit kijken, live berekend uit de koersdata en de cycluspunten. Ze laten zien wat het verleden doortrekt, niet wat er gaat gebeuren.</p>
+
+    <h3 class="fut-h">1 · Power Law-corridor</h3>
+    <p class="cy-note">De prijs groeit als een macht van de tijd sinds het genesisblok (exponent <b id="pl-exp">—</b>). De vloer volgt uit de laagste afwijkingen sinds 2013 en ving historisch elke bodem op; het plafond loopt door de hoogste van de laatste twee cyclustops.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Trendwaarde vandaag</div><div class="cy-num" id="pl-fair">—</div><div class="cy-sub" id="pl-pos">—</div></div>
+      <div><div class="cy-lbl">Vloer vandaag</div><div class="cy-num" id="pl-floor">—</div></div>
+      <div><div class="cy-lbl">Plafond vandaag</div><div class="cy-num" id="pl-ceil">—</div></div>
+      <div><div class="cy-lbl">Rond de verwachte top (Q4 2029)</div><div class="cy-sub fut-big" id="pl-29">—</div></div>
+    </div>
+    <div class="cy-legend">
+      <span><i class="sw" style="background:var(--color-bad)"></i>Plafond</span>
+      <span><i class="sw" style="background:var(--color-warn)"></i>Trendlijn</span>
+      <span><i class="sw" style="background:var(--color-ok)"></i>Vloer</span>
+    </div>
+    <div class="cy-chart" id="pl-chart"></div>
+
+    <h3 class="fut-h">2 · Spookcycli</h3>
+    <p class="cy-note">Elke vorige cyclus vanaf zijn bodem, gelegd op de low van juni 2026 en geschaald met de afnemende winst per cyclus (<span id="gh-hist">—</span>). Komt er nog een lagere bodem, dan schuiven de paden mee naar die datum.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Verwachte winst bodem → top</div><div class="cy-num" id="gh-mult">—</div></div>
+      <div><div class="cy-lbl">Dat geeft een top rond</div><div class="cy-num" id="gh-top">—</div></div>
+      <div><div class="cy-lbl">Toppen van de spookpaden</div><div class="cy-sub fut-big" id="gh-when">—</div></div>
+    </div>
+    <div class="cy-legend" id="gh-legend"></div>
+    <div class="cy-chart" id="gh-chart"></div>
+
+    <h3 class="fut-h">3 · Logarithmic growth curves</h3>
+    <p class="cy-note">Eén curve door de laatste drie cyclustops en één door de laatste drie bodems. Ze kruipen elke cyclus dichter naar elkaar toe: de groei vertraagt en de schommelingen worden kleiner. De oranje stip is de topcurve rond de verwachte top.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Positie in de band</div><div class="cy-num" id="lgc-pos">—</div><div class="cy-sub">0% = bodemcurve, 100% = topcurve</div></div>
+      <div><div class="cy-lbl">Bodemcurve vandaag</div><div class="cy-num" id="lgc-bot">—</div></div>
+      <div><div class="cy-lbl">Topcurve rond Q4 2029</div><div class="cy-num" id="lgc-top29">—</div></div>
+      <div><div class="cy-lbl">Bodemcurve rond 2030</div><div class="cy-num" id="lgc-bot30">—</div></div>
+    </div>
+    <div class="cy-chart" id="lgc-chart"></div>
   </section>
 
   <section class="cy-card" id="fng">
@@ -1275,13 +1324,166 @@ window.hub = (() => {
     timeHover(el, svg, W, H, x, hov, (r) => { const k = RB.bandOf(r.t, r.close); return [day(r.t), `${usd(r.close)} · ${RB_NAMES[k]}`, `Band: ${usd(RB.edge(r.t, k))} – ${usd(RB.edge(r.t, k + 1))}`]; });
   };
 
-  const renderAll = () => { renderIndicators(); renderRainbow(); renderFng(); renderDca(); checkAlerts(); };
+  // ---- Toekomstmodellen: Power Law, spookcycli, logarithmic growth curves ----
+  const ols = (xs, ys) => {
+    const mx = d3.mean(xs), my = d3.mean(ys); let sxy = 0, sxx = 0;
+    xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; });
+    const a = sxy / sxx; return { a, b: my - a * mx };
+  };
+  const histPts = () => {
+    const real = S.daily.rows.filter((r) => r.close > 0);
+    const pre = (cy.rows() || []).filter((e) => e.price != null && !e.projectie && e.t.getTime() < real[0].t).map((e) => ({ t: e.t.getTime(), close: e.price }));
+    return { real, pre, pts: pre.concat(real.filter((r, i) => i % 7 === 0)).filter((r) => r.t > Date.UTC(2010, 6, 1)) };
+  };
+  const logAxisLeft = (svg, y, ml, W, mr) => {
+    const yt = logTicks(y);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d < 1 ? '$' + d : '$' + d3.format('~s')(d));
+  };
+  const priceLines = (svg, x, y, pre, real, from) => {
+    const r = real.filter((q) => q.t >= from);
+    const p = pre.filter((q) => q.t >= from);
+    if (p.length && r.length) svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-width', 1.3).attr('stroke-dasharray', '4 3')
+      .attr('d', d3.line((q) => x(new Date(q.t)), (q) => y(q.close))(p.concat([r[0]])));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-width', 1.5).attr('stroke-linejoin', 'round')
+      .attr('d', d3.line((q) => x(new Date(q.t)), (q) => y(q.close))(r));
+  };
+  const nowLine = (svg, x, mt, H, mb) => {
+    const xn = x(new Date());
+    svg.append('line').attr('class', 'cy-ref').attr('x1', xn).attr('x2', xn).attr('y1', mt).attr('y2', H - mb);
+    svg.append('text').attr('class', 'cy-tick').attr('x', xn + 4).attr('y', mt + 10).text('nu');
+  };
+  const TOP_DATE = () => { const e = (cy.rows() || []).find((q) => q.kind === 'verwachte top'); return e ? e.t.getTime() : Date.UTC(2029, 10, 15); };
+
+  // 1) Power Law: log10(prijs) = a·log10(dagen sinds genesis) + b, met vloer en plafond uit de historische afwijkingen
+  const renderPowerLaw = () => {
+    const el = $('pl-chart'); if (!el || !S.daily) return;
+    const { real, pre, pts } = histPts();
+    const lx = (t) => Math.log10((t - GENESIS) / DAY);
+    const { a, b } = ols(pts.map((r) => lx(r.t)), pts.map((r) => Math.log10(r.close)));
+    const res = pts.filter((r) => r.t >= Date.UTC(2013, 0, 1)).map((r) => Math.log10(r.close) - (a * lx(r.t) + b)).sort(d3.ascending);
+    const fl = d3.quantileSorted(res, 0.01);
+    const lastTops = (cy.rows() || []).filter((e) => e.kind === 'top' && e.price != null).sort((p, q) => p.t - q.t).slice(-2);
+    const ce = lastTops.length ? d3.max(lastTops, (e) => Math.log10(e.price) - (a * lx(e.t.getTime()) + b)) : d3.quantileSorted(res, 0.99);
+    const fair = (t) => Math.pow(10, a * lx(t) + b), floor = (t) => fair(t) * Math.pow(10, fl), ceil = (t) => fair(t) * Math.pow(10, ce);
+    const P = livePrice(), now = Date.now(), tTop = TOP_DATE();
+    setText('pl-exp', d3.format('.2f')(a));
+    setText('pl-fair', usd(Math.round(fair(now)))); setText('pl-pos', `Prijs ${pct(P / fair(now) - 1)} t.o.v. de trendlijn`);
+    setText('pl-floor', usd(Math.round(floor(now)))); setText('pl-ceil', usd(Math.round(ceil(now))));
+    setText('pl-29', `${usd(Math.round(fair(tTop) / 1000) * 1000)} (trend) · ${usd(Math.round(ceil(tTop) / 1000) * 1000)} (plafond)`);
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 300 : 380);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
+    const t0 = Date.UTC(2012, 0, 1), t1 = Date.UTC(2032, 11, 31);
+    const x = d3.scaleUtc([new Date(t0), new Date(t1)], [ml, W - mr]);
+    const y = d3.scaleLog([floor(t0) * 0.7, ceil(t1) * 1.3], [H - mb, mt]).clamp(true);
+    logAxisLeft(svg, y, ml, W, mr); timeAxis(svg, x, W, H);
+    const grid = d3.range(t0, t1 + DAY, 30 * DAY);
+    svg.append('path').attr('class', 'fut-band').attr('d', d3.area((t) => x(new Date(t)), (t) => y(floor(t)), (t) => y(ceil(t)))(grid));
+    const ln = (f, cls) => svg.append('path').attr('class', cls).attr('d', d3.line((t) => x(new Date(t)), (t) => y(f(t)))(grid));
+    ln(ceil, 'fut-ceil'); ln(fair, 'fut-fair'); ln(floor, 'fut-floor');
+    priceLines(svg, x, y, pre, real, t0);
+    nowLine(svg, x, mt, H, mb);
+    const hov = grid.map((t) => ({ t, real: null }));
+    timeHover(el, svg, W, H, x, hov, (r) => { const rr = real[d3.bisector((q) => q.t).center(real, r.t)]; const out = [day(r.t), `Plafond ${usd(Math.round(ceil(r.t)))}`, `Trend ${usd(Math.round(fair(r.t)))}`, `Vloer ${usd(Math.round(floor(r.t)))}`]; if (rr && Math.abs(rr.t - r.t) < 20 * DAY) out.splice(1, 0, `Prijs ${usd(rr.close)}`); return out; });
+  };
+
+  // 2) Spookcycli: vorige cycli vanaf hun bodem, geschaald met de afnemende winst per cyclus
+  const renderGhosts = () => {
+    const el = $('gh-chart'); if (!el || !S.daily) return;
+    const ev = cy.rows() || []; const { real } = histPts();
+    const get = (id) => ev.find((e) => e.id === id);
+    const pairs = [['low1', 'top2'], ['low2', 'top3'], ['low3', 'top4']].map(([l, t]) => ({ low: get(l), top: get(t) })).filter((p) => p.low && p.top);
+    const lnM = pairs.map((p) => Math.log(p.top.price / p.low.price));
+    const ratios = lnM.slice(1).map((v, i) => v / lnM[i]);
+    const lnNext = lnM[lnM.length - 1] * d3.mean(ratios);
+    const anchor = get('low4'); if (!anchor) return;
+    const A = anchor.t.getTime();
+    const colors = ['#a78bfa', '#14b8a6', '#5b8def'];
+    const ghosts = pairs.map((p, i) => {
+      const L = p.low.t.getTime();
+      const path = real.filter((r) => r.t >= L && r.t <= L + 1500 * DAY).map((r) => ({ t: A + (r.t - L), close: anchor.price * Math.pow(r.close / p.low.price, lnNext / lnM[i]) }));
+      const pk = path.length ? d3.greatest(path, (q) => q.close) : null;
+      return { name: `Als ${p.low.t.getUTCFullYear()}–${p.top.t.getUTCFullYear()}`, path, pk, color: colors[i] };
+    }).filter((g) => g.path.length > 30);
+    const mult = Math.exp(lnNext);
+    setText('gh-mult', '×' + d3.format('.1f')(mult));
+    setText('gh-top', usd(Math.round(anchor.price * mult / 1000) * 1000));
+    const pks = ghosts.filter((g) => g.pk).map((g) => g.pk.t);
+    setText('gh-when', pks.length ? `${day(d3.min(pks))} – ${day(d3.max(pks))}` : '—');
+    setText('gh-hist', lnM.map((v) => '×' + d3.format('.0f')(Math.exp(v))).join(' → ') + ' → ×' + d3.format('.1f')(mult));
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 300 : 380);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
+    const t0 = Date.UTC(2025, 0, 1), t1 = Date.UTC(2030, 11, 31);
+    const x = d3.scaleUtc([new Date(t0), new Date(t1)], [ml, W - mr]);
+    const allV = ghosts.flatMap((g) => g.path.map((q) => q.close)).concat(real.filter((r) => r.t >= t0).map((r) => r.close));
+    const y = d3.scaleLog([d3.min(allV) * 0.85, d3.max(allV) * 1.15], [H - mb, mt]);
+    logAxisLeft(svg, y, ml, W, mr); timeAxis(svg, x, W, H);
+    const h5 = ev.find((e) => e.id === 'halving5');
+    if (h5) { const g = svg.append('g').attr('class', 'cy-hv proj'); g.append('line').attr('x1', x(h5.t)).attr('x2', x(h5.t)).attr('y1', mt).attr('y2', H - mb); g.append('text').attr('x', x(h5.t) + 4).attr('y', H - mb - 6).text('H5'); }
+    ghosts.forEach((g) => {
+      const vis = g.path.filter((q) => q.t <= t1);
+      svg.append('path').attr('fill', 'none').style('stroke', g.color).attr('stroke-width', 1.8).attr('opacity', 0.85).attr('d', d3.line((q) => x(new Date(q.t)), (q) => y(q.close))(vis));
+      if (g.pk && g.pk.t <= t1) svg.append('circle').attr('r', 4).attr('cx', x(new Date(g.pk.t))).attr('cy', y(g.pk.close)).style('fill', g.color);
+    });
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-width', 2.2)
+      .attr('d', d3.line((q) => x(new Date(q.t)), (q) => y(q.close))(real.filter((r) => r.t >= t0)));
+    svg.append('circle').attr('class', 'cy-pt k-bodem').attr('r', 5).attr('cx', x(anchor.t)).attr('cy', y(anchor.price));
+    nowLine(svg, x, mt, H, mb);
+    const grid = d3.range(t0, t1, 7 * DAY).map((t) => ({ t }));
+    timeHover(el, svg, W, H, x, grid, (r) => {
+      const out = [day(r.t)];
+      const rr = real[d3.bisector((q) => q.t).center(real, r.t)]; if (rr && Math.abs(rr.t - r.t) < 5 * DAY) out.push(`Prijs ${usd(rr.close)}`);
+      ghosts.forEach((g) => { const q = g.path[d3.bisector((z) => z.t).center(g.path, r.t)]; if (q && Math.abs(q.t - r.t) < 5 * DAY) out.push(`${g.name}: ${usd(Math.round(q.close))}`); });
+      return out;
+    });
+    const lg = $('gh-legend');
+    if (lg) { lg.replaceChildren(); ghosts.forEach((g) => { const s = document.createElement('span'); const i = document.createElement('i'); i.className = 'sw'; i.style.background = g.color; s.append(i, g.name); lg.append(s); }); }
+  };
+
+  // 3) Logarithmic growth curves: aparte curve door de tops en door de bodems
+  const renderLgc = () => {
+    const el = $('lgc-chart'); if (!el || !S.daily) return;
+    const ev = cy.rows() || []; const { real, pre } = histPts();
+    const tops = ev.filter((e) => e.kind === 'top' && e.price != null).sort((p, q) => p.t - q.t).slice(-3);
+    const lows = ev.filter((e) => e.kind === 'bodem' && e.price != null && e.id !== 'low4').sort((p, q) => p.t - q.t).slice(-3);
+    if (tops.length < 3 || lows.length < 3) return;
+    const lx = (t) => Math.log10((t - GENESIS) / DAY);
+    const fit = (arr) => ols(arr.map((e) => lx(e.t.getTime())), arr.map((e) => Math.log10(e.price)));
+    const ft = fit(tops), fb = fit(lows);
+    const topC = (t) => Math.pow(10, ft.a * lx(t) + ft.b), botC = (t) => Math.pow(10, fb.a * lx(t) + fb.b);
+    const P = livePrice(), now = Date.now(), tTop = TOP_DATE();
+    const posN = (Math.log10(P) - Math.log10(botC(now))) / (Math.log10(topC(now)) - Math.log10(botC(now)));
+    setText('lgc-pos', d3.format('.0%')(Math.max(0, Math.min(1, posN))));
+    setText('lgc-bot', usd(Math.round(botC(now))));
+    setText('lgc-top29', usd(Math.round(topC(tTop) / 1000) * 1000));
+    setText('lgc-bot30', usd(Math.round(botC(tTop + 365 * DAY) / 1000) * 1000));
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 300 : 380);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
+    const t0 = Date.UTC(2014, 0, 1), t1 = Date.UTC(2031, 11, 31);
+    const x = d3.scaleUtc([new Date(t0), new Date(t1)], [ml, W - mr]);
+    const y = d3.scaleLog([botC(t0) * 0.5, Math.max(topC(t1), botC(t1)) * 1.5], [H - mb, mt]).clamp(true);
+    logAxisLeft(svg, y, ml, W, mr); timeAxis(svg, x, W, H);
+    const grid = d3.range(t0, t1 + DAY, 30 * DAY);
+    svg.append('path').attr('class', 'fut-band').attr('d', d3.area((t) => x(new Date(t)), (t) => y(botC(t)), (t) => y(topC(t)))(grid));
+    svg.append('path').attr('class', 'fut-ceil').attr('d', d3.line((t) => x(new Date(t)), (t) => y(topC(t)))(grid));
+    svg.append('path').attr('class', 'fut-floor').attr('d', d3.line((t) => x(new Date(t)), (t) => y(botC(t)))(grid));
+    priceLines(svg, x, y, pre, real, t0);
+    svg.append('g').selectAll('circle').data(tops.concat(lows)).join('circle').attr('class', (e) => 'cy-pt k-' + e.kind).attr('r', 4.5).attr('cx', (e) => x(e.t)).attr('cy', (e) => y(e.price));
+    const xt = x(new Date(tTop));
+    svg.append('circle').attr('r', 5).attr('class', 'fut-target').attr('cx', xt).attr('cy', y(topC(tTop)));
+    svg.append('text').attr('class', 'cy-lab').attr('x', xt).attr('y', y(topC(tTop)) - 10).attr('text-anchor', 'middle').text(cy.usdS(topC(tTop)));
+    nowLine(svg, x, mt, H, mb);
+    timeHover(el, svg, W, H, x, grid.map((t) => ({ t })), (r) => { const rr = real[d3.bisector((q) => q.t).center(real, r.t)]; const out = [day(r.t), `Topcurve ${usd(Math.round(topC(r.t)))}`, `Bodemcurve ${usd(Math.round(botC(r.t)))}`]; if (rr && Math.abs(rr.t - r.t) < 20 * DAY) out.splice(1, 0, `Prijs ${usd(rr.close)}`); return out; });
+  };
+  const renderFuture = () => { try { renderPowerLaw(); } catch (e) { console.error(e); } try { renderGhosts(); } catch (e) { console.error(e); } try { renderLgc(); } catch (e) { console.error(e); } };
+
+  const renderAll = () => { renderIndicators(); renderRainbow(); renderFuture(); renderFng(); renderDca(); checkAlerts(); };
 
   // start
   initAlerts();
   ['dca-amt', 'dca-from'].forEach((id) => { const el = $(id); if (el) el.addEventListener('input', renderDca); });
   window.addEventListener('btcprice', () => { renderIndicators(); renderRainbow(); checkAlerts(); });
-  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFng(); renderDca(); }, 150); });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); renderDca(); }, 150); });
   loadDaily(); loadFng(); loadMem();
   setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);
   return { state: S };
