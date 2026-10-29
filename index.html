@@ -78,20 +78,22 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .sw.bear{border-radius:2px;background:color-mix(in srgb,var(--color-bad) 18%,transparent)}
 .sw.bull{border-radius:2px;background:color-mix(in srgb,var(--color-ok) 18%,transparent)}
 .sw.proj{border-radius:2px;border:1px dashed var(--color-fg-muted)}
-.cy-q{display:grid;grid-template-columns:3rem repeat(4,minmax(0,1fr));gap:3px;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
-.cy-qhead span{color:var(--color-fg-muted);text-align:center;padding-bottom:2px}
-.cy-qbody{display:flex;flex-direction:column;gap:3px;min-height:400px}
-.cy-qrow{display:contents}
-.cy-qyear{color:var(--color-fg-muted);display:flex;align-items:center}
-.cy-qcell{min-height:1.9rem;border-radius:4px;padding:3px 5px;display:flex;flex-direction:column;justify-content:center;gap:1px;background:color-mix(in srgb,var(--color-fg) 4%,transparent)}
-.cy-qcell.bull{background:color-mix(in srgb,var(--color-ok) 13%,transparent)}
-.cy-qcell.bear{background:color-mix(in srgb,var(--color-bad) 13%,transparent)}
-.cy-qcell.proj{opacity:.55;outline:1px dashed var(--color-fg-muted);outline-offset:-1px}
+.cy-q{display:grid;grid-template-columns:2rem repeat(16,minmax(0,1fr));gap:2px;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.cy-qhead span{color:var(--color-fg-muted);padding:0 0 3px 3px;grid-column:span 4;border-left:1px solid var(--color-border-line)}
+.cy-qhead span:first-child{grid-column:span 1;border:0}
+.cy-qbody{min-height:170px}
+.cy-qyear{color:var(--color-fg-muted);display:flex;align-items:center;font-weight:500}
+.cy-qcell{height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;gap:1px;font-size:11px;line-height:1;cursor:default;background:color-mix(in srgb,var(--color-fg) 4%,transparent)}
+.cy-qcell.ys{margin-left:3px}
+.cy-qcell.empty{background:transparent}
+.cy-qcell.bull{background:color-mix(in srgb,var(--color-ok) 15%,transparent)}
+.cy-qcell.bear{background:color-mix(in srgb,var(--color-bad) 15%,transparent)}
+.cy-qcell.proj{opacity:.5;outline:1px dashed var(--color-fg-muted);outline-offset:-1px}
 .cy-qcell.now{outline:2px solid var(--color-fg);outline-offset:-2px}
-.cy-qev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cy-qev.k-top,.cy-qev.k-tussentop,.cy-qev.k-verwachte-top{color:var(--color-bad);font-weight:500}
-.cy-qev.k-bodem,.cy-qev.k-tussenbodem{color:var(--color-ok);font-weight:500}
-.cy-qev.k-halving{color:var(--color-warn);font-weight:500}
+.cy-qev.k-top,.cy-qev.k-tussentop,.cy-qev.k-verwachte-top{color:var(--color-bad);font-weight:600}
+.cy-qev.k-bodem,.cy-qev.k-tussenbodem{color:var(--color-ok);font-weight:600}
+.cy-qev.k-halving{color:var(--color-warn)}
+#q-detail{min-height:1.4em}
 .cy-tw{overflow-x:auto}
 .cy table{width:100%;border-collapse:collapse;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
 .cy th{text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
@@ -252,12 +254,13 @@ window.dash = (() => {
 
   <section class="cy-card" id="kwartalen">
     <h2>Tops en bodems per kwartaal</h2>
-    <p class="cy-note">Groen: na een bodem (stijgende fase). Rood: na een top (dalende fase). Gestippeld: projectie volgens het patroon, geen voorspelling. Het omkaderde vak is het huidige kwartaal.</p>
+    <p class="cy-note">Elke rij is een cyclus, vanaf het kwartaal van zijn halving; elke kolom is een kwartaal. Zo staan de tops (jaar 2) en bodems (jaar 3) van elke cyclus onder elkaar. Groen: na een bodem, rood: na een top, gestippeld: projectie. Het omkaderde vak is nu.</p>
     <div class="cy-legend">
-      <span>▲ cyclustop</span><span>▼ bodem</span><span>△ tussentop</span><span>▽ tussenbodem</span><span>◆ halving</span><span>● nu</span>
+      <span>▲ top</span><span>▼ bodem</span><span>△ tussentop</span><span>▽ tussenbodem</span><span>◆ halving</span><span>● nu</span>
     </div>
-    <div class="cy-q cy-qhead"><span></span><span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span></div>
+    <div class="cy-q cy-qhead"><span></span><span>Jaar 1</span><span>Jaar 2</span><span>Jaar 3</span><span>Jaar 4</span></div>
     <div class="cy-q cy-qbody" data-draw="quarters" data-source="events"></div>
+    <p class="cy-sub" id="q-detail">Tik of beweeg over een vak voor de details.</p>
   </section>
 
   <section class="cy-card" id="cycli">
@@ -557,30 +560,40 @@ dash.draw('quarters', (el) => {
   const ev = cy.rows(); if (!cy.ready(el, ev)) return;
   el.replaceChildren();
   const qi = (e) => e.t.getUTCFullYear() * 4 + Math.floor(e.t.getUTCMonth() / 3);
+  const qName = (i) => `Q${(i % 4) + 1} ${Math.floor(i / 4)}`;
   const piv = ev.filter((e) => (e.kind === 'top' || e.kind === 'bodem') && !e.projectie).sort((a, b) => a.t - b.t);
   const hv = ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t);
   const nowE = ev.find((e) => e.kind === 'nu'); const nowQ = nowE ? qi(nowE) : Infinity;
-  const sym = { top: '▲', bodem: '▼', tussentop: '△', tussenbodem: '▽', halving: '◆', nu: '●', genesis: '★', 'verwachte top': '▲?' };
-  for (let yr = 2009; yr <= 2029; yr++) {
-    const row = document.createElement('div'); row.className = 'cy-qrow';
-    const yc = document.createElement('div'); yc.className = 'cy-qyear'; yc.textContent = yr; row.append(yc);
-    for (let q = 0; q < 4; q++) {
-      const idx = yr * 4 + q;
-      const cell = document.createElement('div'); cell.className = 'cy-qcell';
+  const sym = { top: '▲', bodem: '▼', tussentop: '△', tussenbodem: '▽', halving: '◆', nu: '●', genesis: '★', 'verwachte top': '▲' };
+  const detail = document.getElementById('q-detail');
+  // Each row is one cycle: 16 quarters starting at its halving quarter (cycle 0 ends where halving 1 starts).
+  const starts = [qi(hv[0]) - 16, ...hv.map(qi)];
+  starts.forEach((s, c) => {
+    const end = c < starts.length - 1 ? starts[c + 1] : s + 16;
+    const lab = document.createElement('div'); lab.className = 'cy-qyear';
+    lab.textContent = 'C' + c; lab.title = `Cyclus ${c}, vanaf ${qName(s)}`;
+    el.append(lab);
+    for (let k = 0; k < 16; k++) {
+      const idx = s + k;
+      const cell = document.createElement('div'); cell.className = 'cy-qcell' + (k % 4 === 0 ? ' ys' : '');
+      if (idx >= end) { cell.classList.add('empty'); el.append(cell); continue; }
       const last = piv.filter((p) => qi(p) <= idx).pop();
       if (last) cell.classList.add(last.kind === 'top' ? 'bear' : 'bull');
       if (idx > nowQ) cell.classList.add('proj');
       if (idx === nowQ) cell.classList.add('now');
-      ev.filter((e) => qi(e) === idx).sort((a, b) => a.t - b.t).forEach((e) => {
-        const s = document.createElement('div'); s.className = 'cy-qev k-' + e.kind.replace(' ', '-');
-        const v = e.kind === 'halving' ? 'H' + (hv.indexOf(e) + 1) : e.price != null ? cy.usdS(e.price) : e.kind === 'genesis' ? 'start' : 'top';
-        s.textContent = sym[e.kind] + ' ' + v;
-        cell.append(s);
+      const here = ev.filter((e) => qi(e) === idx).sort((a, b) => a.t - b.t);
+      here.forEach((e) => {
+        const s2 = document.createElement('span'); s2.className = 'cy-qev k-' + e.kind.replace(' ', '-');
+        s2.textContent = sym[e.kind]; cell.append(s2);
       });
-      row.append(cell);
+      const info = `${qName(idx)} · cyclus ${c}, jaar ${Math.floor(k / 4) + 1}: ` +
+        (here.length ? here.map((e) => e.label + (e.price != null ? ' ' + cy.usd(e.price) : '')).join(', ') : 'geen top of bodem');
+      cell.title = info;
+      const show = () => { if (detail) detail.textContent = info; };
+      cell.addEventListener('pointerenter', show); cell.addEventListener('click', show);
+      el.append(cell);
     }
-    el.append(row);
-  }
+  });
 });
 </script>
 
