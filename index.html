@@ -104,6 +104,14 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .cy-fail i{width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad)}
 [data-dash-source-state=refreshing]{opacity:.5;transition:opacity var(--cds-dur-slow)}
 [data-dash-source-state=empty]{color:transparent}
+.cy-clock{position:relative;min-height:320px}
+.q.q-bull{fill:color-mix(in srgb,var(--color-ok) 14%,transparent)}
+.q.q-top{fill:color-mix(in srgb,var(--color-bad) 10%,transparent)}
+.q.q-bear{fill:color-mix(in srgb,var(--color-bad) 18%,transparent)}
+.q.q-rec{fill:color-mix(in srgb,var(--color-ok) 8%,transparent)}
+.cy-hand{stroke:var(--color-fg);stroke-width:2.5;stroke-linecap:round}
+.cmp-tiles{margin-top:var(--cds-gap-sm)}
+#cmp-chart{min-height:280px}
 </style>
 
 <script>
@@ -216,6 +224,31 @@ window.dash = (() => {
       </div>
     </section>
   </div>
+
+  <section class="cy-card" id="vergelijk">
+    <h2>Bearmarkt 2022 vs nu</h2>
+    <p class="cy-note">Dagkoers (Bybit BTCUSDT) vanaf de cyclustop, als % van de top: 2022 telt vanaf 10 nov 2021, nu vanaf 6 okt 2025. De gestippelde lijn toont hoe 2022 verder liep na de dag van vandaag. Gelijkenis is de correlatie tussen beide lijnen over dezelfde dagen: 100% is exact dezelfde vorm, 0% is geen verband.</p>
+    <div class="cy-tiles cmp-tiles">
+      <div><div class="cy-lbl">Gelijkenis met 2022</div><div class="cy-num" id="cmp-corr">—</div></div>
+      <div><div class="cy-lbl">Gem. verschil in daling</div><div class="cy-num" id="cmp-mad">—</div></div>
+      <div><div class="cy-lbl">Nu, dag <span id="cmp-day">—</span> na de top</div><div class="cy-num" id="cmp-now">—</div></div>
+      <div><div class="cy-lbl">2022 op dezelfde dag</div><div class="cy-num" id="cmp-then">—</div></div>
+    </div>
+    <p class="cy-sub" id="cmp-take">Koersdata laden…</p>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:#f7931a"></i>Nu (vanaf top okt 2025)</span>
+      <span><i class="sw" style="background:#14b8a6"></i>2022 (vanaf top nov 2021)</span>
+      <span><i class="sw proj"></i>Vervolg van 2022</span>
+    </div>
+    <div class="cy-chart" id="cmp-chart"></div>
+  </section>
+
+  <section class="cy-card" id="klok">
+    <h2>Cyclusklok: de 4 kwarten van een halvingcyclus</h2>
+    <p class="cy-note">Eén rondje is één cyclus, van halving tot halving; elk kwart is ongeveer één jaar. Elke ring is een cyclus (binnen het oudst, buiten de huidige). Rood is de top, groen de bodem, de wijzer staat op vandaag.</p>
+    <div class="cy-clock" data-draw="clock" data-source="events"></div>
+    <p class="cy-sub">De wijzer staat op <b data-draw="clock-now" data-source="events">—</b>. Eerdere tops vielen op <b data-draw="clock-tops" data-source="events">—</b>, eerdere bodems op <b data-draw="clock-lows" data-source="events">—</b>.</p>
+  </section>
 
   <section class="cy-card" id="kwartalen">
     <h2>Tops en bodems per kwartaal</h2>
@@ -549,6 +582,214 @@ dash.draw('quarters', (el) => {
     el.append(row);
   }
 });
+</script>
+
+<script>
+// ---- Cyclusklok: elke cyclus als één rondje van halving tot halving ----
+window.cyClock = (ev) => {
+  const hv = ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t);
+  const frac = (e) => {
+    const h = hv.find((x) => x.cycle === e.cycle), n = hv.find((x) => x.cycle === e.cycle + 1);
+    return h && n ? (e.t - h.t) / (n.t - h.t) : null;
+  };
+  const pts = ev.filter((e) => e.cycle >= 1 && e.cycle <= 4 && (e.kind === 'top' || e.kind === 'bodem' || e.kind === 'nu'))
+    .map((e) => ({ ...e, f: frac(e) })).filter((e) => e.f != null && e.f >= 0 && e.f <= 1);
+  return { hv, pts };
+};
+const deg = (f) => Math.round(f * 360) + '°';
+const yearOf = (f) => 'jaar ' + (Math.floor(f * 4) + 1);
+const span = (xs) => xs.length ? `${deg(Math.min(...xs))}–${deg(Math.max(...xs))}` : '—';
+
+dash.draw('clock-now', (el) => {
+  const ev = cy.rows(); if (!ev) { el.textContent = '—'; return; }
+  const n = cyClock(ev).pts.find((p) => p.kind === 'nu');
+  el.textContent = n ? `${deg(n.f)} (${yearOf(n.f)})` : '—';
+});
+dash.draw('clock-tops', (el) => {
+  const ev = cy.rows(); if (!ev) { el.textContent = '—'; return; }
+  el.textContent = span(cyClock(ev).pts.filter((p) => p.kind === 'top').map((p) => p.f));
+});
+dash.draw('clock-lows', (el) => {
+  const ev = cy.rows(); if (!ev) { el.textContent = '—'; return; }
+  el.textContent = span(cyClock(ev).pts.filter((p) => p.kind === 'bodem' && p.cycle < 4).map((p) => p.f));
+});
+
+dash.draw('clock', (el) => {
+  const ev = cy.rows(); if (!cy.ready(el, ev)) return;
+  el.replaceChildren();
+  const { pts } = cyClock(ev);
+  const W = el.clientWidth || 400, H = Math.min(W, 520);
+  const cx = W / 2, cyy = H / 2, R = H / 2 - 30;
+  const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+  const g = svg.append('g').attr('transform', `translate(${cx},${cyy})`);
+  const quads = [
+    { name: 'Jaar 1 · bull na halving', cls: 'q-bull' },
+    { name: 'Jaar 2 · top', cls: 'q-top' },
+    { name: 'Jaar 3 · bear & bodem', cls: 'q-bear' },
+    { name: 'Jaar 4 · herstel', cls: 'q-rec' },
+  ];
+  const arc = d3.arc().innerRadius(R * 0.22).outerRadius(R);
+  g.selectAll('path.q').data(quads).join('path').attr('class', (d) => 'q ' + d.cls)
+    .attr('d', (d, i) => arc({ startAngle: i * Math.PI / 2, endAngle: (i + 1) * Math.PI / 2 }));
+  // quadrant labels just inside the outer edge, at the middle of each quarter
+  const pos = (f, r) => [r * Math.sin(f * 2 * Math.PI), -r * Math.cos(f * 2 * Math.PI)];
+  const small = W < 420;
+  g.selectAll('text.ql').data(quads).join('text').attr('class', 'cy-tick ql')
+    .attr('transform', (d, i) => { const [x, y] = pos(i * 0.25 + 0.125, R + 16); return `translate(${x},${y})`; })
+    .attr('text-anchor', (d, i) => i < 2 ? 'start' : 'end').attr('dy', '0.32em')
+    .text((d) => small ? d.name.split(' · ')[0] : d.name);
+  // cycle rings
+  const ringR = (c) => R * (0.34 + 0.16 * (c - 1));
+  g.selectAll('circle.ring').data([1, 2, 3, 4]).join('circle').attr('class', 'cy-gl').attr('fill', 'none').attr('r', ringR);
+  g.selectAll('text.rl').data([1, 2, 3, 4]).join('text').attr('class', 'cy-tick').attr('x', 3).attr('y', (c) => -ringR(c) - 3).text((c) => 'C' + c);
+  // quarter divider lines + halving marker at 12 o'clock
+  g.selectAll('line.qd').data([0, 0.25, 0.5, 0.75]).join('line').attr('class', 'cy-ref')
+    .attr('x1', (f) => pos(f, R * 0.22)[0]).attr('y1', (f) => pos(f, R * 0.22)[1]).attr('x2', (f) => pos(f, R)[0]).attr('y2', (f) => pos(f, R)[1]);
+  g.append('path').attr('class', 'cy-pt k-halving').attr('transform', `translate(0,${-R})`).attr('d', d3.symbol(d3.symbolDiamond, 90)());
+  g.append('text').attr('class', 'cy-tick').attr('x', 0).attr('y', -R - 10).attr('text-anchor', 'middle').text('halving');
+  // hand to today
+  const now = pts.find((p) => p.kind === 'nu');
+  if (now) {
+    const [hx, hy] = pos(now.f, R * 0.98);
+    g.append('line').attr('class', 'cy-hand').attr('x1', 0).attr('y1', 0).attr('x2', hx).attr('y2', hy);
+    g.append('circle').attr('r', 4).attr('class', 'cy-pt k-nu');
+  }
+  // tops and bottoms per cycle
+  const marks = pts.filter((p) => p.kind !== 'nu');
+  g.selectAll('circle.m').data(marks).join('circle').attr('class', (d) => 'cy-pt k-' + d.kind).attr('r', small ? 5 : 6)
+    .attr('cx', (d) => pos(d.f, ringR(d.cycle))[0]).attr('cy', (d) => pos(d.f, ringR(d.cycle))[1]);
+  const all = marks.concat(now ? [{ ...now }] : []);
+  cy.hover(el, svg, W, H, all,
+    (d) => cx + pos(d.f, d.kind === 'nu' ? R * 0.98 : ringR(d.cycle))[0],
+    (d) => cyy + pos(d.f, d.kind === 'nu' ? R * 0.98 : ringR(d.cycle))[1],
+    (d) => [`${cy.date(d.date)} · ${d.label}`, `${cy.usd(d.price)} · ${deg(d.f)} (${yearOf(d.f)})`]);
+});
+</script>
+
+<script>
+// ---- 2022 vs nu: dagkoersen van Bybit (fallback Binance), in de browser berekend ----
+(() => {
+  const DAY = 864e5;
+  const TOP22 = { t: Date.UTC(2021, 10, 10), price: 69000 };
+  const TOP25 = { t: Date.UTC(2025, 9, 6), price: 126080 };
+  const LEN22 = 520; // dagen van de 2022-reeks om te tonen
+  const $ = (id) => document.getElementById(id);
+
+  const bybit = async (start, end) => {
+    const u = `https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=D&start=${start}&end=${end}&limit=1000`;
+    const j = await (await fetch(u)).json();
+    if (j.retCode !== 0) throw new Error(j.retMsg);
+    return j.result.list.map((k) => ({ t: +k[0], close: +k[4] }));
+  };
+  const binance = async (start, end) => {
+    const u = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=${start}&endTime=${end}&limit=1000`;
+    const j = await (await fetch(u)).json();
+    return j.map((k) => ({ t: +k[0], close: +k[4] }));
+  };
+  const daily = async (start, end) => {
+    let rows;
+    try { rows = await bybit(start, end); } catch (e) { rows = await binance(start, end); }
+    if (!rows.length) throw new Error('geen data');
+    return rows.sort((a, b) => a.t - b.t);
+  };
+  const toPath = (rows, top) => rows.map((r) => ({ day: Math.round((r.t - top.t) / DAY), pct: r.close / top.price }))
+    .filter((d) => d.day >= 0);
+
+  const pearson = (a, b) => {
+    const n = a.length, ma = d3.mean(a), mb = d3.mean(b);
+    let num = 0, da = 0, db = 0;
+    for (let i = 0; i < n; i++) { const x = a[i] - ma, y = b[i] - mb; num += x * y; da += x * x; db += y * y; }
+    return num / Math.sqrt(da * db);
+  };
+
+  let p22 = null, pNow = null;
+  const pct0 = (v) => d3.format('.0%')(v - 1).replace('-', '−');
+
+  const draw = () => {
+    const el = $('cmp-chart'); if (!el) return;
+    el.replaceChildren();
+    if (!p22 || !pNow) return;
+    const byDay22 = new Map(p22.map((d) => [d.day, d]));
+    const pairs = pNow.map((d) => [d, byDay22.get(d.day)]).filter(([, o]) => o);
+    const N = pNow[pNow.length - 1].day;
+    const corr = pearson(pairs.map(([a]) => a.pct), pairs.map(([, b]) => b.pct));
+    const mad = d3.mean(pairs, ([a, b]) => Math.abs(a.pct - b.pct));
+    const then = byDay22.get(N) || p22.filter((d) => d.day <= N).pop();
+    const low22 = d3.least(p22, (d) => d.pct);
+    $('cmp-corr').textContent = d3.format('.0%')(Math.max(0, corr));
+    $('cmp-mad').textContent = d3.format('.0f')(mad * 100) + ' %-punt';
+    $('cmp-day').textContent = N;
+    $('cmp-now').textContent = pct0(pNow[pNow.length - 1].pct);
+    $('cmp-then').textContent = then ? pct0(then.pct) : '—';
+    const lowDate = new Date(TOP25.t + low22.day * DAY);
+    $('cmp-take').textContent = `In 2022 viel de echte bodem op dag ${low22.day} na de top (${pct0(low22.pct)}). ` +
+      (low22.day <= N
+        ? `Op die tijdlijn had de bodem van deze cyclus rond ${cy.date(lowDate.toISOString().slice(0, 10))} moeten liggen; die dag ligt al achter ons.`
+        : `Op die tijdlijn valt de bodem van deze cyclus rond ${cy.date(lowDate.toISOString().slice(0, 10))}.`) +
+      ` Een vervolg zoals in 2022 zou neerkomen op ±${cy.usd(Math.round(low22.pct * TOP25.price / 100) * 100)}.`;
+
+    const W = el.clientWidth || 600, H = W < 520 ? 280 : 360;
+    const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const ml = cy.measure(svg, '−100%') + 10, mr = 12, mt = 14, mb = 26;
+    const x = d3.scaleLinear([0, LEN22], [ml, W - mr]);
+    const y = d3.scaleLinear([0.15, 1.08], [H - mb, mt]);
+    const yt = [0.2, 0.4, 0.6, 0.8, 1];
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', (d) => d === 1 ? 'cy-ref' : 'cy-gl')
+      .attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em')
+      .attr('text-anchor', 'end').text((d) => d === 1 ? 'top' : pct0(d));
+    const xt = W < 520 ? [0, 180, 360, 520] : [0, 90, 180, 270, 360, 450];
+    svg.append('g').selectAll('text').data(xt).join('text').attr('class', 'cy-tick').attr('x', x).attr('y', H - 8)
+      .attr('text-anchor', (d) => d === 0 ? 'start' : 'middle').text((d) => d === 0 ? 'top' : 'dag ' + d);
+    svg.append('line').attr('class', 'cy-ref').attr('x1', x(N)).attr('x2', x(N)).attr('y1', mt).attr('y2', H - mb);
+    svg.append('text').attr('class', 'cy-tick').attr('x', x(N) + 4).attr('y', mt + 10).text('vandaag');
+    const line = d3.line((d) => x(d.day), (d) => y(d.pct));
+    const past22 = p22.filter((d) => d.day <= N), fut22 = p22.filter((d) => d.day >= N && d.day <= LEN22);
+    svg.append('path').attr('fill', 'none').attr('stroke', '#14b8a6').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('d', line(past22));
+    svg.append('path').attr('fill', 'none').attr('stroke', '#14b8a6').attr('stroke-width', 2).attr('stroke-dasharray', '4 4').attr('opacity', 0.6).attr('d', line(fut22));
+    svg.append('path').attr('fill', 'none').attr('stroke', '#f7931a').attr('stroke-width', 2.5).attr('stroke-linejoin', 'round').attr('d', line(pNow));
+    svg.append('circle').attr('class', 'cy-pt').attr('fill', '#14b8a6').attr('r', 4).attr('cx', x(low22.day)).attr('cy', y(low22.pct));
+    svg.append('text').attr('class', 'cy-lab').attr('x', x(low22.day)).attr('y', y(low22.pct) + 16).attr('text-anchor', 'middle').text('bodem 2022');
+
+    // hover: both values at the same day
+    const tip = document.createElement('div'); tip.className = 'cy-tip'; tip.hidden = true; el.append(tip);
+    const rule = svg.append('line').attr('class', 'cy-focus').attr('y1', mt).attr('y2', H - mb).attr('visibility', 'hidden');
+    const byDayNow = new Map(pNow.map((d) => [d.day, d]));
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'transparent')
+      .on('pointermove', (e) => {
+        const day = Math.max(0, Math.min(LEN22, Math.round(x.invert(d3.pointer(e)[0]))));
+        const a = byDayNow.get(day), b = byDay22.get(day);
+        rule.attr('x1', x(day)).attr('x2', x(day)).attr('visibility', 'visible');
+        tip.replaceChildren();
+        const add = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; tip.append(d); };
+        add('d', `Dag ${day} na de top`);
+        if (a) add('v', `Nu: ${pct0(a.pct)} (${cy.usd(Math.round(a.pct * TOP25.price))})`);
+        if (b) add('v', `2022: ${pct0(b.pct)} (${cy.usd(Math.round(b.pct * TOP22.price))})`);
+        tip.hidden = false;
+        const s = el.clientWidth / W; let left = x(day) * s + 12;
+        if (left + tip.offsetWidth > el.clientWidth) left = x(day) * s - tip.offsetWidth - 12;
+        tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '8px';
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); });
+  };
+
+  const load = async () => {
+    try {
+      const [a, b] = await Promise.all([
+        daily(TOP22.t, TOP22.t + (LEN22 + 2) * DAY),
+        daily(TOP25.t, Date.now()),
+      ]);
+      p22 = toPath(a, TOP22); pNow = toPath(b, TOP25);
+      draw();
+    } catch (e) {
+      console.error(e);
+      $('cmp-take').textContent = 'Kon de dagkoersen niet laden (Bybit en Binance niet bereikbaar).';
+    }
+  };
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
+  load();
+  setInterval(load, 15 * 60000);
+})();
 </script>
 
 </div>
