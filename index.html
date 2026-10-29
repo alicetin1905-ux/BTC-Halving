@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BTC Halving Cyclus</title>
+<meta name="description" content="Bitcoin 4-jarige cyclus: tops, bodems en halvings per kwartaal, cyclus-overlay en halving-countdown.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%82%BF%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{
+  --font-anthropic-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  --font-anthropic-serif:"Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --cds-font-size-caption:12px;--cds-font-size-body:14px;--cds-font-size-heading:16px;--cds-font-size-title:28px;
+  --cds-font-weight-medium:550;
+  --cds-gap-xs:4px;--cds-gap-sm:8px;--cds-gap-md:12px;--cds-gap-lg:20px;--cds-gap-xl:32px;
+  --cds-pad-xs:6px;--cds-pad-sm:10px;--cds-pad-md:14px;--cds-pad-lg:18px;--cds-pad-xl:24px;
+  --cds-radius:10px;--cds-dur-slow:300ms;
+  --color-bg:#f6f5f2;--color-panel:#ffffff;--color-fg:#1d1d1b;--color-fg-muted:#6b6a66;--color-border-line:#e4e2dc;
+  --color-ok:#16865b;--color-warn:#d9820b;--color-bad:#cf3d33;
+  --cds-chart-grid:#ecebe6;--cds-chart-reference:#9a9893;--cds-chart-axis:#c9c7c1;
+  --cds-surface-popover:#ffffff;--cds-border:#dedcd5;--cds-shadow-popover:0 6px 20px rgba(0,0,0,.12);--cds-text-secondary:#6b6a66;
+}
+@media (prefers-color-scheme: dark){:root{
+  --color-bg:#0f1012;--color-panel:#17181b;--color-fg:#ecebe7;--color-fg-muted:#9a9993;--color-border-line:#2a2b2f;
+  --color-ok:#3ccf8e;--color-warn:#f2a33a;--color-bad:#f26a5f;
+  --cds-chart-grid:#24252a;--cds-chart-reference:#6f6e6a;--cds-chart-axis:#3a3b40;
+  --cds-surface-popover:#1f2024;--cds-border:#34353a;--cds-shadow-popover:0 6px 20px rgba(0,0,0,.5);--cds-text-secondary:#9a9993;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-anthropic-sans);-webkit-text-size-adjust:100%}
+#dash-root{max-width:1200px;margin:0 auto;padding:24px 16px 40px}
+@media (max-width:520px){:root{--cds-font-size-title:24px}}
+
+.cy{display:flex;flex-direction:column;gap:var(--cds-gap-lg);font-family:var(--font-anthropic-sans)}
+.cy-head h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0}
+.cy-head p{margin:var(--cds-gap-xs) 0 0;color:var(--color-fg-muted);font-size:var(--cds-font-size-body);max-width:52rem}
+.cy .cy-head b,.cy .cy-sub b{font-weight:500;color:var(--color-fg);font-variant-numeric:tabular-nums}
+.cy-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9.5rem),1fr));gap:var(--cds-gap-md)}
+.cy-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:var(--cds-gap-md)}
+.cy-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg);min-width:0}
+.cy-card h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0}
+.cy-note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:var(--cds-gap-xs) 0 var(--cds-gap-md)}
+.cy-lbl{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.cy-num{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);font-variant-numeric:tabular-nums;margin-top:var(--cds-gap-xs);min-height:1.2em}
+.cy-num.bad{color:var(--color-bad)}
+.cy-sub{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin-top:var(--cds-gap-xs)}
+.cy-chart{position:relative;min-height:300px}
+.cy-chart.ov{min-height:260px}
+.cy-bar{position:relative;min-height:72px;margin-top:var(--cds-gap-md)}
+.cy-svg{display:block;overflow:visible}
+.cy-tick{fill:var(--color-fg-muted);font-size:var(--cds-font-size-caption);font-family:var(--font-anthropic-sans);font-variant-numeric:tabular-nums}
+.cy-gl{stroke:var(--cds-chart-grid);stroke-width:1}
+.cy-ref{stroke:var(--cds-chart-reference);stroke-width:1;stroke-dasharray:4 3}
+.cy-bear{fill:color-mix(in srgb,var(--color-bad) 9%,transparent)}
+.cy-hv line{stroke:var(--color-warn);stroke-width:1.5;stroke-dasharray:4 3}
+.cy-hv text{fill:var(--color-warn);font-size:var(--cds-font-size-caption);font-weight:500}
+.cy-hv.proj{opacity:.55}
+.cy-projtop{fill:none;stroke:var(--color-bad);stroke-dasharray:3 3;opacity:.7}
+.cy-line{fill:none;stroke:var(--color-fg);stroke-opacity:.5;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.cy-pt.k-top{fill:var(--color-bad)}
+.cy-pt.k-bodem{fill:var(--color-ok)}
+.cy-pt.k-tussentop{fill:var(--color-panel);stroke:var(--color-bad);stroke-width:1.5}
+.cy-pt.k-tussenbodem{fill:var(--color-panel);stroke:var(--color-ok);stroke-width:1.5}
+.cy-pt.k-halving{fill:var(--color-warn)}
+.cy-pt.k-nu{fill:var(--color-fg)}
+.cy-lab{font-size:var(--cds-font-size-caption);fill:var(--color-fg);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--color-panel);stroke-width:3px;stroke-linejoin:round}
+.cy-focus{fill:none;stroke:var(--color-fg);stroke-width:1.5;pointer-events:none}
+.cy-tip{position:absolute;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);border-radius:var(--cds-radius);box-shadow:var(--cds-shadow-popover);padding:var(--cds-pad-xs) var(--cds-pad-sm);font-size:var(--cds-font-size-caption);white-space:nowrap;z-index:2}
+.cy-tip .d{color:var(--cds-text-secondary)}
+.cy-tip .v{font-variant-numeric:tabular-nums;font-weight:500}
+.cy-legend{display:flex;flex-wrap:wrap;gap:var(--cds-gap-xs) var(--cds-gap-md);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin-bottom:var(--cds-gap-sm)}
+.cy-legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:50%;box-sizing:border-box}
+.sw.top{background:var(--color-bad)}.sw.bodem{background:var(--color-ok)}
+.sw.ring{background:transparent;border:1.5px solid}.sw.ring.top{border-color:var(--color-bad)}.sw.ring.bodem{border-color:var(--color-ok)}
+.sw.halving{background:var(--color-warn);border-radius:2px;transform:rotate(45deg);width:8px;height:8px}
+.sw.bear{border-radius:2px;background:color-mix(in srgb,var(--color-bad) 18%,transparent)}
+.sw.bull{border-radius:2px;background:color-mix(in srgb,var(--color-ok) 18%,transparent)}
+.sw.proj{border-radius:2px;border:1px dashed var(--color-fg-muted)}
+.cy-q{display:grid;grid-template-columns:3rem repeat(4,minmax(0,1fr));gap:3px;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.cy-qhead span{color:var(--color-fg-muted);text-align:center;padding-bottom:2px}
+.cy-qbody{display:flex;flex-direction:column;gap:3px;min-height:400px}
+.cy-qrow{display:contents}
+.cy-qyear{color:var(--color-fg-muted);display:flex;align-items:center}
+.cy-qcell{min-height:1.9rem;border-radius:4px;padding:3px 5px;display:flex;flex-direction:column;justify-content:center;gap:1px;background:color-mix(in srgb,var(--color-fg) 4%,transparent)}
+.cy-qcell.bull{background:color-mix(in srgb,var(--color-ok) 13%,transparent)}
+.cy-qcell.bear{background:color-mix(in srgb,var(--color-bad) 13%,transparent)}
+.cy-qcell.proj{opacity:.55;outline:1px dashed var(--color-fg-muted);outline-offset:-1px}
+.cy-qcell.now{outline:2px solid var(--color-fg);outline-offset:-2px}
+.cy-qev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cy-qev.k-top,.cy-qev.k-tussentop,.cy-qev.k-verwachte-top{color:var(--color-bad);font-weight:500}
+.cy-qev.k-bodem,.cy-qev.k-tussenbodem{color:var(--color-ok);font-weight:500}
+.cy-qev.k-halving{color:var(--color-warn);font-weight:500}
+.cy-tw{overflow-x:auto}
+.cy table{width:100%;border-collapse:collapse;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.cy th{text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
+.cy td{padding:6px 8px;border-bottom:1px solid var(--color-border-line);white-space:nowrap}
+.cy th.r,.cy td.r{text-align:right}
+.cy tr.proj td{color:var(--color-fg-muted);font-style:italic}
+.cy td.bad{color:var(--color-bad)}
+.cy-foot{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.cy-fail{display:flex;align-items:center;justify-content:center;gap:6px;min-height:inherit;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.cy-fail i{width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad)}
+[data-dash-source-state=refreshing]{opacity:.5;transition:opacity var(--cds-dur-slow)}
+[data-dash-source-state=empty]{color:transparent}
+</style>
+
+<script>
+window.BTC_EVENTS = [{"id": "genesis", "date": "2009-01-03", "kind": "genesis", "price": null, "cycle": 0, "projectie": false, "label": "Genesisblok, nog geen marktprijs", "block": null, "reward": null}, {"id": "low0a", "date": "2010-07-17", "kind": "bodem", "price": 0.06, "cycle": 0, "projectie": false, "label": "Eerste marktnotering", "block": null, "reward": null}, {"id": "mid0", "date": "2010-11-06", "kind": "tussentop", "price": 0.39, "cycle": 0, "projectie": false, "label": "Eerste rally", "block": null, "reward": null}, {"id": "top0", "date": "2011-06-08", "kind": "top", "price": 31.91, "cycle": 0, "projectie": false, "label": "Top cyclus 0", "block": null, "reward": null}, {"id": "low0", "date": "2011-11-18", "kind": "bodem", "price": 2.01, "cycle": 0, "projectie": false, "label": "Bodem cyclus 0", "block": null, "reward": null}, {"id": "halving1", "date": "2012-11-28", "kind": "halving", "price": 12.35, "cycle": 1, "projectie": false, "label": "Halving 1 (50 → 25 BTC)", "block": 210000, "reward": 25}, {"id": "mid1", "date": "2013-04-09", "kind": "tussentop", "price": 266, "cycle": 1, "projectie": false, "label": "Tussentop april 2013", "block": null, "reward": null}, {"id": "top1", "date": "2013-12-04", "kind": "top", "price": 1150, "cycle": 1, "projectie": false, "label": "Top cyclus 1", "block": null, "reward": null}, {"id": "low1", "date": "2015-01-14", "kind": "bodem", "price": 170, "cycle": 1, "projectie": false, "label": "Bodem cyclus 1", "block": null, "reward": null}, {"id": "halving2", "date": "2016-07-09", "kind": "halving", "price": 650, "cycle": 2, "projectie": false, "label": "Halving 2 (25 → 12,5 BTC)", "block": 420000, "reward": 12.5}, {"id": "top2", "date": "2017-12-17", "kind": "top", "price": 19700, "cycle": 2, "projectie": false, "label": "Top cyclus 2", "block": null, "reward": null}, {"id": "low2", "date": "2018-12-15", "kind": "bodem", "price": 3150, "cycle": 2, "projectie": false, "label": "Bodem cyclus 2", "block": null, "reward": null}, {"id": "dip2", "date": "2020-03-13", "kind": "tussenbodem", "price": 3850, "cycle": 2, "projectie": false, "label": "COVID-crash", "block": null, "reward": null}, {"id": "halving3", "date": "2020-05-11", "kind": "halving", "price": 8600, "cycle": 3, "projectie": false, "label": "Halving 3 (12,5 → 6,25 BTC)", "block": 630000, "reward": 6.25}, {"id": "mid3", "date": "2021-04-14", "kind": "tussentop", "price": 64800, "cycle": 3, "projectie": false, "label": "Tussentop april 2021", "block": null, "reward": null}, {"id": "top3", "date": "2021-11-10", "kind": "top", "price": 69000, "cycle": 3, "projectie": false, "label": "Top cyclus 3", "block": null, "reward": null}, {"id": "low3", "date": "2022-11-21", "kind": "bodem", "price": 15500, "cycle": 3, "projectie": false, "label": "Bodem cyclus 3 (FTX)", "block": null, "reward": null}, {"id": "mid3b", "date": "2024-03-14", "kind": "tussentop", "price": 73800, "cycle": 3, "projectie": false, "label": "ATH vóór de halving", "block": null, "reward": null}, {"id": "halving4", "date": "2024-04-20", "kind": "halving", "price": 64000, "cycle": 4, "projectie": false, "label": "Halving 4 (6,25 → 3,125 BTC)", "block": 840000, "reward": 3.125}, {"id": "top4", "date": "2025-10-06", "kind": "top", "price": 126080, "cycle": 4, "projectie": false, "label": "Top cyclus 4", "block": null, "reward": null}, {"id": "dip4", "date": "2026-02-05", "kind": "tussenbodem", "price": 60000, "cycle": 4, "projectie": false, "label": "Daling naar ±$60k", "block": null, "reward": null}, {"id": "low4", "date": "2026-06-15", "kind": "bodem", "price": 57700, "cycle": 4, "projectie": false, "label": "Laagste punt tot nu (voorlopig)", "block": null, "reward": null}, {"id": "now", "date": "2026-10-26", "kind": "nu", "price": 82423, "cycle": 4, "projectie": false, "label": "Prijs eind oktober 2026", "block": null, "reward": null}, {"id": "halving5", "date": "2028-04-15", "kind": "halving", "price": null, "cycle": 5, "projectie": true, "label": "Halving 5, verwacht (3,125 → 1,5625 BTC)", "block": 1050000, "reward": 1.5625}, {"id": "top5", "date": "2029-11-15", "kind": "verwachte top", "price": null, "cycle": 5, "projectie": true, "label": "Top volgens het patroon (geen voorspelling)", "block": null, "reward": null}];
+window.dash = (() => {
+  const files = { events: window.BTC_EVENTS };
+  const calcs = {}, draws = {};
+  const colors = ['#5b8def', '#a78bfa', '#14b8a6', '#f7931a'];
+  const data = (id) => {
+    if (files[id]) return { status: 'ok', data: files[id] };
+    const c = calcs[id];
+    if (!c) return { status: 'missing', data: [] };
+    try { return { status: 'ok', data: c.fn(...c.inputs.map((i) => data(i).data)) }; }
+    catch (e) { console.error(id, e); return { status: 'error', data: [], message: String(e) }; }
+  };
+  const calc = (id, spec) => { calcs[id] = spec; };
+  const runOne = (name) => document.querySelectorAll(`[data-draw="${name}"]`).forEach((el) => {
+    try { draws[name](el); } catch (e) { console.error(name, e); }
+  });
+  const draw = (name, fn) => { draws[name] = fn; };
+  const redraw = () => Object.keys(draws).forEach(runOne);
+  const setRows = (id, rows) => { files[id] = rows; redraw(); };
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(redraw, 150); });
+  window.addEventListener('load', redraw);
+  return { data, calc, draw, colors, redraw, setRows, onData: () => {}, params: () => ({}) };
+})();
+</script>
+
+</head>
+<body>
+<div id="dash-root">
+
+
+<div class="cy">
+  <header class="cy-head" id="overzicht">
+    <h1>BTC 4-jarige cyclus</h1>
+    <p>Sinds de eerste halving viel elke cyclustop in Q4, gemiddeld <b data-draw="v" data-source="summary" data-row="0" data-field="gem_halving_top" data-fmt="int">—</b> maanden na de halving, en volgde de bodem ongeveer <b data-draw="v" data-source="summary" data-row="0" data-field="gem_top_bodem" data-fmt="int">—</b> maanden later. Deze cyclus zakte BTC <b data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</b> vanaf de top: de kleinste daling ooit.</p>
+  </header>
+
+  <section class="cy-tiles">
+    <div class="cy-card">
+      <div class="cy-lbl">Cyclustop 2025</div>
+      <div class="cy-num" data-draw="v" data-source="events" data-where="id=top4" data-field="price" data-fmt="usd">—</div>
+      <div class="cy-sub">Hoogste punt van deze cyclus</div>
+    </div>
+    <div class="cy-card">
+      <div class="cy-lbl">Laagste punt 2026</div>
+      <div class="cy-num" data-draw="v" data-source="events" data-where="id=low4" data-field="price" data-fmt="usd">—</div>
+      <div class="cy-sub">Voorlopige bodem van deze cyclus</div>
+    </div>
+    <div class="cy-card">
+      <div class="cy-lbl">Daling top → laagste punt</div>
+      <div class="cy-num bad" data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</div>
+      <div class="cy-sub">Vorige cycli zakten dieper</div>
+    </div>
+    <div class="cy-card">
+      <div class="cy-lbl">Prijs nu</div>
+      <div class="cy-num" data-draw="v" data-source="events" data-where="id=now" data-field="price" data-fmt="usd">—</div>
+      <div class="cy-sub" id="live-note">Laatst bekende koers</div>
+    </div>
+    <div class="cy-card">
+      <div class="cy-lbl">Dagen tot halving 5</div>
+      <div class="cy-num" data-draw="cd-days" data-source="events">—</div>
+      <div class="cy-sub">Schatting op basis van bloktijd</div>
+    </div>
+  </section>
+
+  <section class="cy-card" id="koers">
+    <h2>Koers sinds 2010 met de vier halvings</h2>
+    <p class="cy-note">Logaritmische schaal: elke rasterlijn is tien keer de vorige. Rode banden zijn de bearmarkten van top naar bodem. Pivotpunten verbonden met rechte lijnen, geen dagkoers.</p>
+    <div class="cy-legend">
+      <span><i class="sw top"></i>Cyclustop</span>
+      <span><i class="sw bodem"></i>Bodem</span>
+      <span><i class="sw ring top"></i>Tussentop</span>
+      <span><i class="sw ring bodem"></i>Tussenbodem</span>
+      <span><i class="sw halving"></i>Halving</span>
+      <span><i class="sw bear"></i>Bearmarkt</span>
+    </div>
+    <div class="cy-chart" data-draw="chart" data-source="events"></div>
+  </section>
+
+  <section class="cy-card" id="overlay">
+    <h2>Alle cycli over elkaar</h2>
+    <p class="cy-note">Elke cyclus start bij zijn halving (1× = de prijs op de halvingdag). Zo zie je waar deze cyclus staat ten opzichte van dezelfde maand in eerdere cycli. Elke cyclus stijgt minder hard dan de vorige.</p>
+    <div class="cy-chart ov" data-draw="overlay" data-source="events"></div>
+  </section>
+
+  <div class="cy-grid2">
+    <section class="cy-card" id="countdown">
+      <h2>Halving-countdown</h2>
+      <p class="cy-note">Elke halving valt op een vast blok. De datum is een schatting op basis van de gemiddelde bloktijd; de echte dag hangt af van de hashrate.</p>
+      <div class="cy-num" data-draw="cd-days" data-source="events">—</div>
+      <div class="cy-sub">dagen te gaan · <b data-draw="cd-pct" data-source="events">—</b> van deze cyclus voorbij</div>
+      <div class="cy-bar" data-draw="cd-bar" data-source="events"></div>
+    </section>
+    <section class="cy-card" id="halvings">
+      <h2>Halvings en blokbeloning</h2>
+      <p class="cy-note">Bij elke halving gaat de beloning per blok door twee. De laatste rij is verwacht.</p>
+      <div class="cy-tw">
+        <table data-source="events" data-row-key="label">
+          <thead><tr>
+            <th data-field="label">Halving</th>
+            <th data-field="date">Datum</th>
+            <th class="r" data-field="block">Blok</th>
+            <th class="r" data-field="reward">Beloning (BTC)</th>
+            <th class="r" data-field="price">Prijs op die dag</th>
+          </tr></thead>
+          <tbody data-draw="halvings"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <section class="cy-card" id="kwartalen">
+    <h2>Tops en bodems per kwartaal</h2>
+    <p class="cy-note">Groen: na een bodem (stijgende fase). Rood: na een top (dalende fase). Gestippeld: projectie volgens het patroon, geen voorspelling. Het omkaderde vak is het huidige kwartaal.</p>
+    <div class="cy-legend">
+      <span>▲ cyclustop</span><span>▼ bodem</span><span>△ tussentop</span><span>▽ tussenbodem</span><span>◆ halving</span><span>● nu</span>
+    </div>
+    <div class="cy-q cy-qhead"><span></span><span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span></div>
+    <div class="cy-q cy-qbody" data-draw="quarters" data-source="events"></div>
+  </section>
+
+  <section class="cy-card" id="cycli">
+    <h2>Cijfers per cyclus</h2>
+    <p class="cy-note">Daling is van de cyclustop naar de laagste bodem daarna. Cyclus 0 had nog geen halving vooraf; de bodem van cyclus 4 is voorlopig.</p>
+    <div class="cy-tw">
+      <table data-source="cycles" data-row-key="cyclus">
+        <thead><tr>
+          <th data-field="cyclus">Cyclus</th>
+          <th data-field="halving">Halving</th>
+          <th data-field="top_kwartaal">Top</th>
+          <th class="r" data-field="top_prijs">Topprijs</th>
+          <th data-field="bodem_kwartaal">Bodem</th>
+          <th class="r" data-field="bodem_prijs">Bodemprijs</th>
+          <th class="r" data-field="daling">Daling</th>
+          <th class="r" data-field="maanden_halving_top">Halving → top (mnd)</th>
+          <th class="r" data-field="maanden_top_bodem">Top → bodem (mnd)</th>
+        </tr></thead>
+        <tbody data-draw="cycletable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="cy-foot">Prijzen zijn afgerond en verschillen per exchange. Het patroon is historisch, geen garantie voor de toekomst.</p>
+</div>
+
+<script>
+dash.calc('cycles', {
+  inputs: ['events'],
+  title: 'Cijfers per cyclus',
+  description: 'Per cyclus de halving, de hoogste top, de laagste bodem erna, de daling en de maanden ertussen.',
+  fn: (events) => {
+    const q = (d) => `Q${Math.ceil(+d.slice(5, 7) / 3)} ${d.slice(0, 4)}`;
+    const mo = (a, b) => Math.round((new Date(b) - new Date(a)) / 2629800000);
+    return [0, 1, 2, 3, 4].map((c) => {
+      const ev = events.filter((e) => +e.cycle === c);
+      const h = ev.find((e) => e.kind === 'halving');
+      const t = ev.filter((e) => e.kind === 'top').sort((a, b) => b.price - a.price)[0];
+      const b = ev.filter((e) => e.kind === 'bodem' && e.date > t.date).sort((a, b) => a.price - b.price)[0];
+      return {
+        cyclus: `Cyclus ${c}`,
+        halving: h ? q(h.date) : null,
+        top_kwartaal: q(t.date), top_prijs: +t.price,
+        bodem_kwartaal: q(b.date), bodem_prijs: +b.price,
+        daling: b.price / t.price - 1,
+        maanden_halving_top: h ? mo(h.date, t.date) : null,
+        maanden_top_bodem: mo(t.date, b.date),
+      };
+    });
+  },
+});
+
+dash.calc('summary', {
+  inputs: ['cycles'],
+  title: 'Gemiddelden over de cycli',
+  description: 'Gemiddelde maanden van halving tot top (cycli 1–4) en van top tot bodem (afgeronde cycli 1–3).',
+  fn: (cycles) => {
+    const avg = (xs) => Math.round(xs.reduce((s, x) => s + x, 0) / xs.length);
+    const withHalving = cycles.filter((c) => c.maanden_halving_top != null);
+    const finished = cycles.filter((c) => ['Cyclus 1', 'Cyclus 2', 'Cyclus 3'].includes(c.cyclus));
+    return [{
+      gem_halving_top: avg(withHalving.map((c) => c.maanden_halving_top)),
+      gem_top_bodem: avg(finished.map((c) => c.maanden_top_bodem)),
+    }];
+  },
+});
+
+window.cy = (() => {
+  const M = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const usd = (p) => p == null ? '—' : p < 10 ? '$' + d3.format(',.2~f')(p) : '$' + d3.format(',.0f')(p);
+  const usdS = (p) => p < 10 ? '$' + d3.format('.2~f')(p) : p < 1000 ? '$' + d3.format(',.0f')(p) : '$' + d3.format('.3~s')(p);
+  const date = (s) => { const d = new Date(s + 'T00:00:00Z'); return `${d.getUTCDate()} ${M[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+  const rows = () => {
+    const r = dash.data('events');
+    return r.status === 'ok' ? r.data.map((d) => ({ ...d, t: new Date(d.date + 'T00:00:00Z'), price: d.price == null ? null : +d.price, cycle: +d.cycle })) : null;
+  };
+  const ready = (el, ev) => {
+    if (ev) { el.classList.remove('dash-skeleton'); return true; }
+    const st = dash.data('events').status;
+    el.replaceChildren();
+    el.classList.toggle('dash-skeleton', st === 'loading');
+    if (st === 'error' || st === 'connect') {
+      const f = document.createElement('div'); f.className = 'cy-fail';
+      f.append(document.createElement('i'), 'Failed to load');
+      el.append(f);
+    }
+    return false;
+  };
+  const fmt = (kind, v) => kind === 'usd' ? usd(+v) : kind === 'pct' ? d3.format('+.1%')(+v) : kind === 'int' ? d3.format(',')(+v) : String(v);
+  // Nearest-point tooltip for an svg chart inside el.
+  const hover = (el, svg, W, H, pts, fx, fy, lines) => {
+    const tip = document.createElement('div'); tip.className = 'cy-tip'; tip.hidden = true; el.append(tip);
+    const focus = svg.append('circle').attr('class', 'cy-focus').attr('r', 7).attr('visibility', 'hidden');
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'transparent')
+      .on('pointermove', (e) => {
+        const [mx, my] = d3.pointer(e);
+        const d = d3.least(pts, (p) => Math.hypot(fx(p) - mx, (fy(p) - my) * 0.25));
+        if (!d) return;
+        focus.attr('cx', fx(d)).attr('cy', fy(d)).attr('visibility', 'visible');
+        const [a, b] = lines(d);
+        tip.replaceChildren();
+        const l1 = document.createElement('div'); l1.className = 'd'; l1.textContent = a;
+        const l2 = document.createElement('div'); l2.className = 'v'; l2.textContent = b;
+        tip.append(l1, l2); tip.hidden = false;
+        const s = el.clientWidth / W, tw = tip.offsetWidth;
+        let left = fx(d) * s + 12; if (left + tw > el.clientWidth) left = fx(d) * s - tw - 12;
+        tip.style.left = Math.max(0, left) + 'px';
+        tip.style.top = Math.max(0, fy(d) * s - 40) + 'px';
+      })
+      .on('pointerleave', () => { tip.hidden = true; focus.attr('visibility', 'hidden'); });
+  };
+  const measure = (svg, text) => { const t = svg.append('text').attr('class', 'cy-tick').text(text); const w = t.node().getComputedTextLength(); t.remove(); return w; };
+  return { usd, usdS, date, rows, ready, fmt, hover, measure };
+})();
+
+dash.draw('v', (el) => {
+  const r = dash.data(el.dataset.source);
+  if (r.status !== 'ok') { el.textContent = '—'; return; }
+  let row;
+  if (el.dataset.row != null) row = r.data[+el.dataset.row];
+  else {
+    const [k, v] = el.dataset.where.split('=').map(decodeURIComponent);
+    row = r.data.find((d) => String(d[k]) === v);
+  }
+  const val = row ? row[el.dataset.field] : null;
+  el.textContent = val == null ? '—' : cy.fmt(el.dataset.fmt, val);
+});
+
+dash.draw('cd-days', (el) => {
+  const ev = cy.rows();
+  const h = ev && ev.find((e) => e.id === 'halving5');
+  el.textContent = h ? d3.format(',')(Math.max(0, Math.ceil((h.t - Date.now()) / 864e5))) : '—';
+});
+
+dash.draw('cd-pct', (el) => {
+  const ev = cy.rows();
+  const a = ev && ev.find((e) => e.id === 'halving4'), b = ev && ev.find((e) => e.id === 'halving5');
+  el.textContent = a && b ? d3.format('.0%')(Math.min(1, Math.max(0, (Date.now() - a.t) / (b.t - a.t)))) : '—';
+});
+</script>
+
+<script>
+dash.draw('chart', (el) => {
+  const ev = cy.rows(); if (!cy.ready(el, ev)) return;
+  el.replaceChildren();
+  const W = el.clientWidth || 600, H = W < 520 ? 300 : 400;
+  const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+  const ml = cy.measure(svg, '$100k') + 10, mr = 14, mt = 22, mb = 26;
+  const x = d3.scaleUtc([new Date(Date.UTC(2009, 6, 1)), new Date(Date.UTC(2030, 0, 1))], [ml, W - mr]);
+  const y = d3.scaleLog([0.03, 300000], [H - mb, mt]);
+  const ticks = [0.1, 1, 10, 100, 1000, 10000, 100000];
+  svg.append('g').selectAll('line').data(ticks).join('line').attr('class', 'cy-gl')
+    .attr('x1', ml).attr('x2', W - mr).attr('y1', (d) => y(d)).attr('y2', (d) => y(d));
+  svg.append('g').selectAll('text').data(ticks).join('text').attr('class', 'cy-tick')
+    .attr('x', ml - 6).attr('y', (d) => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end')
+    .text((d) => d < 1 ? '$0.1' : '$' + d3.format('~s')(d));
+  const step = W < 520 ? 4 : 2;
+  svg.append('g').selectAll('text').data(d3.range(2010, 2031, step)).join('text').attr('class', 'cy-tick')
+    .attr('x', (d) => x(new Date(Date.UTC(d, 0, 1)))).attr('y', H - 8).attr('text-anchor', 'middle').text((d) => d);
+
+  const tops = ev.filter((e) => e.kind === 'top');
+  const bands = tops.map((t) => ({ t, b: ev.filter((e) => e.kind === 'bodem' && e.cycle === t.cycle && e.t > t.t).sort((a, b) => a.price - b.price)[0] })).filter((d) => d.b);
+  svg.append('g').selectAll('rect').data(bands).join('rect').attr('class', 'cy-bear')
+    .attr('x', (d) => x(d.t.t)).attr('width', (d) => Math.max(1, x(d.b.t) - x(d.t.t))).attr('y', mt).attr('height', H - mb - mt);
+
+  const hv = ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t);
+  const hg = svg.append('g').selectAll('g').data(hv).join('g').attr('class', (d) => d.projectie ? 'cy-hv proj' : 'cy-hv');
+  hg.append('line').attr('x1', (d) => x(d.t)).attr('x2', (d) => x(d.t)).attr('y1', mt).attr('y2', H - mb);
+  hg.append('text').attr('x', (d) => x(d.t)).attr('y', mt - 8).attr('text-anchor', 'middle').text((d, i) => 'H' + (i + 1));
+
+  const pt = ev.find((e) => e.kind === 'verwachte top');
+  if (pt) {
+    const q0 = new Date(Date.UTC(pt.t.getUTCFullYear(), Math.floor(pt.t.getUTCMonth() / 3) * 3, 1));
+    const q1 = d3.utcMonth.offset(q0, 3);
+    svg.append('rect').attr('class', 'cy-projtop').attr('x', x(q0)).attr('width', x(q1) - x(q0)).attr('y', mt).attr('height', H - mb - mt);
+    svg.append('text').attr('class', 'cy-tick').attr('x', x(q0) - 3).attr('y', mt + 12).attr('text-anchor', 'end').text('top?');
+  }
+
+  const pts = ev.filter((e) => e.price != null && !e.projectie).sort((a, b) => a.t - b.t);
+  svg.append('path').attr('class', 'cy-line').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(pts));
+  svg.append('g').selectAll('path').data(pts).join('path')
+    .attr('class', (d) => 'cy-pt k-' + d.kind.replace(' ', '-'))
+    .attr('transform', (d) => `translate(${x(d.t)},${y(d.price)})`)
+    .attr('d', (d) => d3.symbol(d.kind === 'halving' ? d3.symbolDiamond : d3.symbolCircle, d.kind === 'top' || d.kind === 'bodem' ? 64 : 40)());
+  svg.append('g').selectAll('text').data(pts.filter((d) => d.kind === 'top' || d.kind === 'bodem' || d.kind === 'nu')).join('text')
+    .attr('class', 'cy-lab').attr('x', (d) => x(d.t)).attr('y', (d) => y(d.price) + (d.kind === 'bodem' ? 17 : -10))
+    .attr('text-anchor', 'middle').text((d) => cy.usdS(d.price));
+
+  cy.hover(el, svg, W, H, pts, (d) => x(d.t), (d) => y(d.price), (d) => [`${cy.date(d.date)} · ${d.label}`, cy.usd(d.price)]);
+});
+</script>
+
+<script>
+dash.draw('overlay', (el) => {
+  const ev = cy.rows(); if (!cy.ready(el, ev)) return;
+  el.replaceChildren();
+  const W = el.clientWidth || 600, H = W < 520 ? 260 : 320;
+  const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+  const ml = cy.measure(svg, '100×') + 10, mr = 44, mt = 12, mb = 26;
+  const x = d3.scaleLinear([0, 48], [ml, W - mr]);
+  const y = d3.scaleLog([0.5, 150], [H - mb, mt]);
+  const yt = [0.5, 1, 2, 5, 10, 20, 50, 100];
+  svg.append('g').selectAll('line').data(yt).join('line').attr('class', (d) => d === 1 ? 'cy-ref' : 'cy-gl')
+    .attr('x1', ml).attr('x2', W - mr).attr('y1', (d) => y(d)).attr('y2', (d) => y(d));
+  svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick')
+    .attr('x', ml - 6).attr('y', (d) => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d + '×');
+  svg.append('g').selectAll('text').data([0, 12, 24, 36, 48]).join('text').attr('class', 'cy-tick')
+    .attr('x', (d) => x(d)).attr('y', H - 8).attr('text-anchor', (d) => d === 0 ? 'start' : d === 48 ? 'end' : 'middle')
+    .text((d) => d === 0 ? 'halving' : d + ' mnd');
+
+  const hv = ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t);
+  const series = [1, 2, 3, 4].map((c, i) => {
+    const h = hv.find((e) => e.cycle === c);
+    const next = hv.find((e) => e.cycle === c + 1);
+    const own = ev.filter((e) => e.cycle === c && e.price != null && !e.projectie && e.t >= h.t);
+    const all = next && next.price != null ? own.concat([next]) : own;
+    const pts = all.map((e) => ({ ...e, c, mo: (e.t - h.t) / 2629800000, mult: e.price / h.price })).sort((a, b) => a.mo - b.mo);
+    return { c, pts, color: dash.colors[i] };
+  });
+  const nowE = series[3].pts.find((p) => p.kind === 'nu');
+  if (nowE) {
+    svg.append('line').attr('class', 'cy-ref').attr('x1', x(nowE.mo)).attr('x2', x(nowE.mo)).attr('y1', mt).attr('y2', H - mb);
+    svg.append('text').attr('class', 'cy-tick').attr('x', x(nowE.mo) + 4).attr('y', mt + 10).text('nu');
+  }
+  const g = svg.append('g').selectAll('g').data(series).join('g');
+  g.append('path').attr('fill', 'none').attr('stroke', (s) => s.color).attr('stroke-width', (s) => s.c === 4 ? 3 : 2)
+    .attr('stroke-opacity', (s) => s.c === 4 ? 1 : 0.75).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round')
+    .attr('d', (s) => d3.line((d) => x(d.mo), (d) => y(d.mult))(s.pts));
+  g.selectAll('circle').data((s) => s.pts.map((p) => ({ p, s }))).join('circle')
+    .attr('cx', (d) => x(d.p.mo)).attr('cy', (d) => y(d.p.mult)).attr('r', 3).attr('fill', (d) => d.s.color);
+  const ends = series.map((s) => { const e = s.pts[s.pts.length - 1]; return { s, x: x(e.mo) + 6, y: y(e.mult) }; }).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 13 && Math.abs(ends[i].x - ends[i - 1].x) < 40) ends[i].y = ends[i - 1].y + 13;
+  svg.append('g').selectAll('text').data(ends).join('text').attr('class', 'cy-lab').attr('x', (d) => d.x).attr('y', (d) => d.y).attr('dy', '0.32em')
+    .attr('fill', (d) => d.s.color).style('fill', (d) => d.s.color).text((d) => 'C' + d.s.c);
+
+  const allPts = series.flatMap((s) => s.pts);
+  cy.hover(el, svg, W, H, allPts, (d) => x(d.mo), (d) => y(d.mult),
+    (d) => [`Cyclus ${d.c} · ${Math.round(d.mo)} mnd na halving`, `${d.label}: ${cy.usd(d.price)} (${d3.format('.1f')(d.mult)}×)`]);
+});
+</script>
+
+<script>
+dash.draw('cd-bar', (el) => {
+  const ev = cy.rows(); if (!cy.ready(el, ev)) return;
+  el.replaceChildren();
+  const get = (id) => ev.find((e) => e.id === id);
+  const a = get('halving4'), b = get('halving5');
+  if (!a || !b) return;
+  const W = el.clientWidth || 360, H = 72, by = 30;
+  const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+  const x = d3.scaleUtc([a.t, b.t], [16, W - 16]).clamp(true);
+  const today = new Date();
+  svg.append('rect').attr('x', x.range()[0]).attr('y', by - 4).attr('width', x.range()[1] - x.range()[0]).attr('height', 8).attr('rx', 4)
+    .attr('fill', 'color-mix(in srgb, var(--color-fg) 10%, transparent)');
+  svg.append('rect').attr('x', x.range()[0]).attr('y', by - 4).attr('width', x(today) - x.range()[0]).attr('height', 8).attr('rx', 4)
+    .style('fill', dash.colors[0]);
+  const marks = [
+    { t: a.t, txt: 'H4', cls: 'k-halving', up: false },
+    { t: get('top4').t, txt: 'top ' + cy.usdS(get('top4').price), cls: 'k-top', up: true },
+    { t: get('low4').t, txt: 'bodem ' + cy.usdS(get('low4').price), cls: 'k-bodem', up: false },
+    { t: today, txt: 'vandaag', cls: 'k-nu', up: true },
+    { t: b.t, txt: 'H5', cls: 'k-halving', up: false },
+  ];
+  const g = svg.append('g').selectAll('g').data(marks).join('g').attr('transform', (d) => `translate(${x(d.t)},${by})`);
+  g.append('path').attr('class', (d) => 'cy-pt ' + d.cls).attr('d', (d) => d3.symbol(d.cls === 'k-halving' ? d3.symbolDiamond : d3.symbolCircle, 56)());
+  g.append('text').attr('class', 'cy-tick').attr('y', (d) => d.up ? -12 : 24)
+    .attr('text-anchor', (d) => x(d.t) < 40 ? 'start' : x(d.t) > W - 40 ? 'end' : 'middle')
+    .attr('dx', (d) => x(d.t) < 40 ? -8 : x(d.t) > W - 40 ? 8 : 0).text((d) => d.txt);
+});
+
+dash.draw('halvings', (tb) => {
+  const ev = cy.rows();
+  tb.replaceChildren();
+  if (!ev) return;
+  ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t).forEach((e) => {
+    const tr = tb.insertRow(); if (e.projectie) tr.className = 'proj';
+    [[e.label, ''], [cy.date(e.date), ''], [d3.format(',')(e.block), 'r'], [d3.format('~g')(e.reward), 'r'], [cy.usd(e.price), 'r']].forEach(([v, c]) => {
+      const td = tr.insertCell(); td.textContent = v; if (c) td.className = c;
+    });
+  });
+});
+
+dash.draw('cycletable', (tb) => {
+  const r = dash.data('cycles');
+  tb.replaceChildren();
+  if (r.status !== 'ok') return;
+  r.data.forEach((c) => {
+    const tr = tb.insertRow();
+    [[c.cyclus, ''], [c.halving ?? '—', ''], [c.top_kwartaal, ''], [cy.usd(c.top_prijs), 'r'], [c.bodem_kwartaal, ''], [cy.usd(c.bodem_prijs), 'r'],
+     [d3.format('+.1%')(c.daling), 'r bad'], [c.maanden_halving_top ?? '—', 'r'], [c.maanden_top_bodem, 'r']].forEach(([v, cls]) => {
+      const td = tr.insertCell(); td.textContent = v; if (cls) td.className = cls;
+    });
+  });
+});
+
+dash.draw('quarters', (el) => {
+  const ev = cy.rows(); if (!cy.ready(el, ev)) return;
+  el.replaceChildren();
+  const qi = (e) => e.t.getUTCFullYear() * 4 + Math.floor(e.t.getUTCMonth() / 3);
+  const piv = ev.filter((e) => (e.kind === 'top' || e.kind === 'bodem') && !e.projectie).sort((a, b) => a.t - b.t);
+  const hv = ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t);
+  const nowE = ev.find((e) => e.kind === 'nu'); const nowQ = nowE ? qi(nowE) : Infinity;
+  const sym = { top: '▲', bodem: '▼', tussentop: '△', tussenbodem: '▽', halving: '◆', nu: '●', genesis: '★', 'verwachte top': '▲?' };
+  for (let yr = 2009; yr <= 2029; yr++) {
+    const row = document.createElement('div'); row.className = 'cy-qrow';
+    const yc = document.createElement('div'); yc.className = 'cy-qyear'; yc.textContent = yr; row.append(yc);
+    for (let q = 0; q < 4; q++) {
+      const idx = yr * 4 + q;
+      const cell = document.createElement('div'); cell.className = 'cy-qcell';
+      const last = piv.filter((p) => qi(p) <= idx).pop();
+      if (last) cell.classList.add(last.kind === 'top' ? 'bear' : 'bull');
+      if (idx > nowQ) cell.classList.add('proj');
+      if (idx === nowQ) cell.classList.add('now');
+      ev.filter((e) => qi(e) === idx).sort((a, b) => a.t - b.t).forEach((e) => {
+        const s = document.createElement('div'); s.className = 'cy-qev k-' + e.kind.replace(' ', '-');
+        const v = e.kind === 'halving' ? 'H' + (hv.indexOf(e) + 1) : e.price != null ? cy.usdS(e.price) : e.kind === 'genesis' ? 'start' : 'top';
+        s.textContent = sym[e.kind] + ' ' + v;
+        cell.append(s);
+      });
+      row.append(cell);
+    }
+    el.append(row);
+  }
+});
+</script>
+
+</div>
+
+<script>
+// Live BTC price from Bybit (public endpoint, no key). Replaces the "nu" point and re-draws.
+(() => {
+  const note = document.getElementById('live-note');
+  const tick = async () => {
+    try {
+      const r = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT', { cache: 'no-store' });
+      const j = await r.json();
+      const p = +j.result.list[0].lastPrice;
+      if (!(p > 0)) throw new Error('geen prijs');
+      const today = new Date().toISOString().slice(0, 10);
+      const rows = window.BTC_EVENTS.map((e) => e.id === 'now' ? { ...e, price: p, date: today, label: 'Live prijs (Bybit BTCUSDT)' } : e);
+      window.BTC_EVENTS = rows;
+      dash.setRows('events', rows);
+      if (note) note.textContent = 'Live via Bybit · ' + new Date().toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      if (note) note.textContent = 'Laatst bekende koers (live niet bereikbaar)';
+    }
+  };
+  tick();
+  setInterval(tick, 60000);
+})();
+</script>
+
+</body>
+</html>
