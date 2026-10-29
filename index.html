@@ -154,10 +154,27 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .fut-floor{fill:none;stroke:var(--color-ok);stroke-width:1.8}
 .fut-target{fill:var(--color-warn);stroke:var(--color-panel);stroke-width:2}
 #pl-chart,#gh-chart,#lgc-chart{min-height:300px}
+.cy-nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-8px -16px 0;padding:10px 16px;background:color-mix(in srgb,var(--color-bg) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--color-border-line)}
+.cy-nav::-webkit-scrollbar{display:none}
+.cy-nav a{flex:0 0 auto;padding:6px 12px;border-radius:999px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);text-decoration:none;border:1px solid var(--color-border-line);background:var(--color-panel);white-space:nowrap}
+.cy-nav a.on{color:var(--color-bg);background:var(--color-fg);border-color:var(--color-fg)}
+.cy section[id],.cy header[id]{scroll-margin-top:64px}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+.al-anchor{margin:var(--cds-gap-md) 0;padding-top:var(--cds-gap-sm);border-top:1px solid var(--color-border-line)}
+.al-anchor .fut-h{margin-top:var(--cds-gap-sm)}
 </style>
 
 <script>
 window.BTC_EVENTS = [{"id": "genesis", "date": "2009-01-03", "kind": "genesis", "price": null, "cycle": 0, "projectie": false, "label": "Genesisblok, nog geen marktprijs", "block": null, "reward": null}, {"id": "low0a", "date": "2010-07-17", "kind": "bodem", "price": 0.06, "cycle": 0, "projectie": false, "label": "Eerste marktnotering", "block": null, "reward": null}, {"id": "mid0", "date": "2010-11-06", "kind": "tussentop", "price": 0.39, "cycle": 0, "projectie": false, "label": "Eerste rally", "block": null, "reward": null}, {"id": "top0", "date": "2011-06-08", "kind": "top", "price": 31.91, "cycle": 0, "projectie": false, "label": "Top cyclus 0", "block": null, "reward": null}, {"id": "low0", "date": "2011-11-18", "kind": "bodem", "price": 2.01, "cycle": 0, "projectie": false, "label": "Bodem cyclus 0", "block": null, "reward": null}, {"id": "halving1", "date": "2012-11-28", "kind": "halving", "price": 12.35, "cycle": 1, "projectie": false, "label": "Halving 1 (50 → 25 BTC)", "block": 210000, "reward": 25}, {"id": "mid1", "date": "2013-04-09", "kind": "tussentop", "price": 266, "cycle": 1, "projectie": false, "label": "Tussentop april 2013", "block": null, "reward": null}, {"id": "top1", "date": "2013-12-04", "kind": "top", "price": 1150, "cycle": 1, "projectie": false, "label": "Top cyclus 1", "block": null, "reward": null}, {"id": "low1", "date": "2015-01-14", "kind": "bodem", "price": 170, "cycle": 1, "projectie": false, "label": "Bodem cyclus 1", "block": null, "reward": null}, {"id": "halving2", "date": "2016-07-09", "kind": "halving", "price": 650, "cycle": 2, "projectie": false, "label": "Halving 2 (25 → 12,5 BTC)", "block": 420000, "reward": 12.5}, {"id": "top2", "date": "2017-12-17", "kind": "top", "price": 19700, "cycle": 2, "projectie": false, "label": "Top cyclus 2", "block": null, "reward": null}, {"id": "low2", "date": "2018-12-15", "kind": "bodem", "price": 3150, "cycle": 2, "projectie": false, "label": "Bodem cyclus 2", "block": null, "reward": null}, {"id": "dip2", "date": "2020-03-13", "kind": "tussenbodem", "price": 3850, "cycle": 2, "projectie": false, "label": "COVID-crash", "block": null, "reward": null}, {"id": "halving3", "date": "2020-05-11", "kind": "halving", "price": 8600, "cycle": 3, "projectie": false, "label": "Halving 3 (12,5 → 6,25 BTC)", "block": 630000, "reward": 6.25}, {"id": "mid3", "date": "2021-04-14", "kind": "tussentop", "price": 64800, "cycle": 3, "projectie": false, "label": "Tussentop april 2021", "block": null, "reward": null}, {"id": "top3", "date": "2021-11-10", "kind": "top", "price": 69000, "cycle": 3, "projectie": false, "label": "Top cyclus 3", "block": null, "reward": null}, {"id": "low3", "date": "2022-11-21", "kind": "bodem", "price": 15500, "cycle": 3, "projectie": false, "label": "Bodem cyclus 3 (FTX)", "block": null, "reward": null}, {"id": "mid3b", "date": "2024-03-14", "kind": "tussentop", "price": 73800, "cycle": 3, "projectie": false, "label": "ATH vóór de halving", "block": null, "reward": null}, {"id": "halving4", "date": "2024-04-20", "kind": "halving", "price": 64000, "cycle": 4, "projectie": false, "label": "Halving 4 (6,25 → 3,125 BTC)", "block": 840000, "reward": 3.125}, {"id": "top4", "date": "2025-10-06", "kind": "top", "price": 126080, "cycle": 4, "projectie": false, "label": "Top cyclus 4", "block": null, "reward": null}, {"id": "dip4", "date": "2026-02-05", "kind": "tussenbodem", "price": 60000, "cycle": 4, "projectie": false, "label": "Daling naar ±$60k", "block": null, "reward": null}, {"id": "low4", "date": "2026-06-15", "kind": "bodem", "price": 57700, "cycle": 4, "projectie": false, "label": "Laagste punt tot nu (voorlopig)", "block": null, "reward": null}, {"id": "now", "date": "2026-10-26", "kind": "nu", "price": 82423, "cycle": 4, "projectie": false, "label": "Prijs eind oktober 2026", "block": null, "reward": null}, {"id": "halving5", "date": "2028-04-15", "kind": "halving", "price": null, "cycle": 5, "projectie": true, "label": "Halving 5, verwacht (3,125 → 1,5625 BTC)", "block": 1050000, "reward": 1.5625}, {"id": "top5", "date": "2029-11-15", "kind": "verwachte top", "price": null, "cycle": 5, "projectie": true, "label": "Top volgens het patroon (geen voorspelling)", "block": null, "reward": null}];
+window.BTC_ANCHOR_DEFAULT = { price: 57700, date: '2026-06-15' };
+try {
+  const a = JSON.parse(localStorage.getItem('btcHalvingAnchor') || 'null');
+  if (a && a.price > 0 && /^\d{4}-\d{2}-\d{2}$/.test(a.date)) {
+    window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'low4' ? { ...e, price: a.price, date: a.date, label: 'Cyclusbodem (zelf ingesteld)' } : e);
+    window.BTC_LOW = a.price;
+  }
+} catch (e) { /* geen opslag */ }
 window.dash = (() => {
   const files = { events: window.BTC_EVENTS };
   const calcs = {}, draws = {};
@@ -188,6 +205,20 @@ window.dash = (() => {
 
 
 <div class="cy">
+  <nav class="cy-nav" aria-label="Secties">
+    <a href="#overzicht">Overzicht</a>
+    <a href="#koers">Koers</a>
+    <a href="#indicatoren">Indicatoren</a>
+    <a href="#rainbow">Rainbow</a>
+    <a href="#toekomst">Toekomst</a>
+    <a href="#fng">Sentiment</a>
+    <a href="#overlay">Cycli</a>
+    <a href="#countdown">Halving</a>
+    <a href="#vergelijk">2022 vs nu</a>
+    <a href="#klok">Klok</a>
+    <a href="#kwartalen">Kwartalen</a>
+    <a href="#alerts">Alerts</a>
+  </nav>
   <header class="cy-head" id="overzicht">
     <h1>BTC 4-jarige cyclus</h1>
     <p>Sinds de eerste halving viel elke cyclustop in Q4, gemiddeld <b data-draw="v" data-source="summary" data-row="0" data-field="gem_halving_top" data-fmt="int">—</b> maanden na de halving, en volgde de bodem ongeveer <b data-draw="v" data-source="summary" data-row="0" data-field="gem_top_bodem" data-fmt="int">—</b> maanden later. Deze cyclus zakte BTC <b data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</b> vanaf de top: de kleinste daling ooit.</p>
@@ -298,7 +329,7 @@ window.dash = (() => {
     <div class="cy-chart" id="pl-chart"></div>
 
     <h3 class="fut-h">2 · Spookcycli</h3>
-    <p class="cy-note">Elke vorige cyclus vanaf zijn bodem, gelegd op de low van juni 2026 en geschaald met de afnemende winst per cyclus (<span id="gh-hist">—</span>). Komt er nog een lagere bodem, dan schuiven de paden mee naar die datum.</p>
+    <p class="cy-note">Elke vorige cyclus vanaf zijn bodem, gelegd op de cyclusbodem (instelbaar onder Alerts) en geschaald met de afnemende winst per cyclus (<span id="gh-hist">—</span>). Komt er nog een lagere bodem, dan schuiven de paden mee naar die datum.</p>
     <div class="cy-tiles fut-tiles">
       <div><div class="cy-lbl">Verwachte winst bodem → top</div><div class="cy-num" id="gh-mult">—</div></div>
       <div><div class="cy-lbl">Dat geeft een top rond</div><div class="cy-num" id="gh-top">—</div></div>
@@ -380,7 +411,7 @@ window.dash = (() => {
     </div>
     <div class="cy-chart" id="cmp-chart"></div>
     <h2 style="margin-top:var(--cds-gap-lg)">Bodemscenario's bij een dip in Q4</h2>
-    <p class="cy-note">Berekend vanaf de live prijs, het laagste punt van juni ($57.700) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van juni rond het 200-weeks gemiddelde. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
+    <p class="cy-note">Berekend vanaf de live prijs, de cyclusbodem (standaard $57.700 in juni, instelbaar onder Alerts) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van juni rond het 200-weeks gemiddelde. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
     <div class="cy-tw">
       <table>
         <thead><tr><th>Scenario</th><th class="r">Bodemzone</th><th class="r">Vanaf nu</th><th class="r">Vanaf top</th></tr></thead>
@@ -429,16 +460,25 @@ window.dash = (() => {
   </section>
 
   <section class="cy-card" id="alerts">
-    <h2>Alerts</h2>
-    <p class="cy-note">Een melding zodra BTC een bodemzone binnengaat, of een week sluit onder de juni-low. Dit werkt zolang deze pagina open staat (ook als tabblad op de achtergrond). Voor meldingen 24/7 met de pagina dicht is een Cloudflare Worker nodig.</p>
+    <h2>Alerts &amp; instellingen</h2>
+    <p class="cy-note">Een melding zodra BTC een bodemzone binnengaat, of een week sluit onder de cyclusbodem. Dit werkt zolang deze pagina open staat (ook als tabblad op de achtergrond). Voor meldingen 24/7 met de pagina dicht is een Cloudflare Worker nodig.</p>
     <div class="al-row"><button id="al-perm" class="primary">Browsermeldingen aanzetten</button><span class="cy-sub" id="al-perm-state"></span></div>
     <div class="al-checks">
       <label><input type="checkbox" data-al="z1"> Hogere bodem</label>
       <label><input type="checkbox" data-al="z2"> Dubbele bodem</label>
       <label><input type="checkbox" data-al="z3"> 2022-scenario</label>
       <label><input type="checkbox" data-al="z4"> Volle cyclusdaling</label>
-      <label><input type="checkbox" data-al="wk"> Weekslot onder juni-low</label>
+      <label><input type="checkbox" data-al="wk"> Weekslot onder cyclusbodem</label>
     </div>
+    <details class="al-tg" open>
+      <summary>ntfy-app (aanbevolen)</summary>
+      <p class="cy-note">Installeer de gratis ntfy-app, abonneer je op een eigen onderwerp en vul dat hier in. Kies een moeilijk te raden naam: iedereen die het onderwerp kent, kan meelezen. Het wordt alleen op dit toestel bewaard.</p>
+      <div class="dca-form">
+        <label>Onderwerp <input id="al-ntfy-topic" type="text" autocomplete="off" spellcheck="false"></label>
+        <label>Server <input id="al-ntfy-server" type="url" value="https://ntfy.sh" autocomplete="off" spellcheck="false"></label>
+      </div>
+      <div class="al-row"><button id="al-ntfy-rand">Willekeurige naam</button><button id="al-ntfy-save">Opslaan</button><button id="al-ntfy-test" class="primary">Testbericht</button><span class="cy-sub" id="al-ntfy-state"></span></div>
+    </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>
       <p class="cy-note">Maak een bot via @BotFather en vul het token en je chat-id in. Ze worden alleen op dit toestel bewaard.</p>
@@ -448,6 +488,15 @@ window.dash = (() => {
       </div>
       <div class="al-row"><button id="al-tg-save">Opslaan</button><button id="al-tg-test">Testbericht</button><span class="cy-sub" id="al-tg-state"></span></div>
     </details>
+    <div class="al-anchor">
+      <h3 class="fut-h">Cyclusbodem</h3>
+      <p class="cy-note">De bodemzones, alerts, spookcycli en cyclustabel rekenen vanaf deze bodem. Zakt BTC in Q4 nog lager, vul dan hier de nieuwe bodem in. Standaard: $57.700 op 15 juni 2026.</p>
+      <div class="dca-form">
+        <label>Bodemprijs ($) <input id="anc-price" type="number" min="1" step="100" inputmode="numeric"></label>
+        <label>Datum <input id="anc-date" type="date"></label>
+      </div>
+      <div class="al-row"><button id="anc-save" class="primary">Toepassen</button><button id="anc-reset">Standaard</button><span class="cy-sub" id="anc-state"></span></div>
+    </div>
     <p class="cy-sub">Status: <b id="al-state">—</b></p>
     <ul class="al-log" id="al-log"></ul>
   </section>
@@ -857,14 +906,14 @@ dash.draw('clock', (el) => {
 
 <script>
 // ---- Bodemzones (gedeeld door de 2022-grafiek en de alerts) ----
-// Hogere bodem = Fibonacci 0,618–0,786 terug van het herstel (juni-low → hoogste koers sindsdien).
-window.BTC_LOW = 57700;
+// Hogere bodem = Fibonacci 0,618–0,786 terug van het herstel (cyclusbodem → hoogste koers sindsdien).
+window.BTC_LOW = window.BTC_LOW || 57700;
 window.BTC_TOP = 126080;
 window.btcZones = (P) => {
   const LOW = window.BTC_LOW, HIGH = Math.max(window.btcRallyHigh || 0, P);
   return [
     { name: 'Hogere bodem', short: 'hoger', lo: LOW + (HIGH - LOW) * 0.214, hi: LOW + (HIGH - LOW) * 0.382, cls: 'z1' },
-    { name: 'Dubbele bodem', short: 'dubbel', lo: 57000, hi: 60000, cls: 'z2' },
+    { name: 'Dubbele bodem', short: 'dubbel', lo: LOW * 0.988, hi: LOW * 1.04, cls: 'z2' },
     { name: '2022-scenario', short: '2022', lo: LOW * 0.88 - 1000, hi: LOW * 0.88 + 1000, cls: 'z3' },
     { name: 'Volle cyclusdaling', short: 'vol', lo: window.BTC_TOP * 0.28, hi: window.BTC_TOP * 0.30, cls: 'z4' },
   ];
@@ -940,14 +989,20 @@ window.hub = (() => {
     return rows;
   };
 
+  const anchorT = () => { const e = (window.BTC_EVENTS || []).find((q) => q.id === 'low4'); return e ? Date.parse(e.date + 'T00:00:00Z') : Date.UTC(2026, 5, 15); };
+  const computeRally = () => {
+    if (!S.daily) return;
+    const after = S.daily.rows.filter((r) => r.t >= anchorT());
+    window.btcRallyHigh = after.length ? d3.max(after, (r) => r.close) : null;
+  };
+
   const loadDaily = async () => {
     const tries = [fromCryptoCompare, () => fromBinance('https://api.binance.com'), () => fromBinance('https://data-api.binance.vision'), fromBybit];
     for (const f of tries) {
       try { const d = await f(); S.daily = { src: d.src, rows: enrich(d.rows) }; break; } catch (e) { console.warn(e); }
     }
     if (!S.daily) { setText('ind-src', 'koersdata niet bereikbaar'); return; }
-    const after = S.daily.rows.filter((r) => r.t >= Date.UTC(2026, 5, 15));
-    window.btcRallyHigh = after.length ? d3.max(after, (r) => r.close) : null;
+    computeRally();
     const first = S.daily.rows[0];
     setText('ind-src', `${S.daily.src}, dagkoers sinds ${new Date(first.t).getUTCFullYear()}`);
     setText('koers-src', `Dunne lijn: dagkoers via ${S.daily.src} sinds ${new Date(first.t).getUTCFullYear()}` + (first.t > Date.UTC(2011, 0, 1) ? '; daarvoor verbonden pivotpunten.' : '.'));
@@ -1109,7 +1164,7 @@ window.hub = (() => {
 
   // ---- Alerts ----
   const KEY = 'btcHalvingAlerts.v1';
-  const defaults = { on: { z1: true, z2: true, z3: true, z4: true, wk: true }, tg: { token: '', chat: '' }, lastZone: null, lastWeek: null, log: [] };
+  const defaults = { on: { z1: true, z2: true, z3: true, z4: true, wk: true }, tg: { token: '', chat: '' }, ntfy: { server: 'https://ntfy.sh', topic: '' }, lastZone: null, lastWeek: null, log: [] };
   const loadSt = () => { try { return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (e) { return { ...defaults }; } };
   let AL = loadSt();
   const saveSt = () => { try { localStorage.setItem(KEY, JSON.stringify(AL)); } catch (e) { /* opslag niet beschikbaar */ } };
@@ -1125,11 +1180,18 @@ window.hub = (() => {
     });
     return r.ok;
   };
+  const sendNtfy = async (msg, title) => {
+    if (!AL.ntfy || !AL.ntfy.topic) return false;
+    const base = (AL.ntfy.server || 'https://ntfy.sh').trim().replace(/\/+$/, '');
+    const r = await fetch(`${base}/${encodeURIComponent(AL.ntfy.topic)}?title=${encodeURIComponent(title || 'BTC Halving')}&tags=bitcoin,chart_with_downwards_trend&priority=4`, { method: 'POST', body: msg });
+    return r.ok;
+  };
   const notify = (msg) => {
     const stamp = new Date().toLocaleString('nl-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     AL.log.push(`${stamp} · ${msg}`); AL.log = AL.log.slice(-30); saveSt(); renderLog();
     try { if ('Notification' in window && Notification.permission === 'granted') new Notification('BTC Halving', { body: msg }); } catch (e) { /* geen meldingen */ }
     sendTelegram(msg).catch(() => {});
+    sendNtfy(msg).catch(() => {});
   };
   const checkAlerts = () => {
     const P = livePrice(); if (!P) return;
@@ -1142,7 +1204,7 @@ window.hub = (() => {
       const done = S.daily.rows.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= Date.now());
       const wk = done[done.length - 1];
       if (wk && wk.close < window.BTC_LOW && AL.lastWeek !== wk.t && AL.on.wk) {
-        notify(`Weekslot ${usd(Math.round(wk.close))} onder de juni-low van ${usd(window.BTC_LOW)}: het 2022-scenario wordt waarschijnlijker.`);
+        notify(`Weekslot ${usd(Math.round(wk.close))} onder de cyclusbodem van ${usd(window.BTC_LOW)}: het 2022-scenario wordt waarschijnlijker.`);
         AL.lastWeek = wk.t;
       }
     }
@@ -1170,6 +1232,50 @@ window.hub = (() => {
       AL.tg = { token: tok.value.trim(), chat: chat.value.trim() }; saveSt();
       try { const ok = await sendTelegram('Testbericht van je BTC Halving-dashboard ✅'); if (tgs) tgs.textContent = ok ? 'Test verstuurd.' : 'Versturen mislukt: controleer token en chat-id.'; }
       catch (e) { if (tgs) tgs.textContent = 'Versturen mislukt: Telegram niet bereikbaar.'; }
+    });
+    // ntfy
+    const nt = $('al-ntfy-topic'), ns = $('al-ntfy-server'), nst = $('al-ntfy-state');
+    const randTopic = () => 'btc-halving-' + Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 10);
+    if (nt) { nt.value = AL.ntfy.topic; nt.placeholder = randTopic(); }
+    if (ns) ns.value = AL.ntfy.server || 'https://ntfy.sh';
+    const saveNtfy = () => { AL.ntfy = { topic: nt.value.trim(), server: ns.value.trim() || 'https://ntfy.sh' }; saveSt(); };
+    const rb = $('al-ntfy-rand'); if (rb) rb.addEventListener('click', () => { nt.value = randTopic(); });
+    const sb = $('al-ntfy-save'); if (sb) sb.addEventListener('click', () => { saveNtfy(); if (nst) nst.textContent = AL.ntfy.topic ? `Opgeslagen. Abonneer je in de app op "${AL.ntfy.topic}".` : 'Geen onderwerp ingevuld.'; });
+    const tb = $('al-ntfy-test'); if (tb) tb.addEventListener('click', async () => {
+      if (!nt.value.trim()) nt.value = nt.placeholder;
+      saveNtfy();
+      try { const ok = await sendNtfy('Testbericht van je BTC Halving-dashboard ✅', 'BTC Halving · test'); if (nst) nst.textContent = ok ? `Verstuurd naar "${AL.ntfy.topic}".` : 'Versturen mislukt: controleer de server.'; }
+      catch (e) { if (nst) nst.textContent = 'Versturen mislukt: ntfy niet bereikbaar.'; }
+    });
+    // cyclusbodem
+    const ap = $('anc-price'), ad = $('anc-date'), ast = $('anc-state');
+    const cur = () => (window.BTC_EVENTS || []).find((q) => q.id === 'low4');
+    const fill = () => { const e = cur(); if (e) { if (ap) ap.value = e.price; if (ad) ad.value = e.date; } };
+    fill();
+    const apply = (price, date, custom) => {
+      window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'low4' ? { ...e, price, date, label: custom ? 'Cyclusbodem (zelf ingesteld)' : 'Laagste punt tot nu (voorlopig)' } : e);
+      window.BTC_LOW = price;
+      try { if (custom) localStorage.setItem('btcHalvingAnchor', JSON.stringify({ price, date })); else localStorage.removeItem('btcHalvingAnchor'); } catch (e) { /* */ }
+      AL.lastZone = null; AL.lastWeek = null; saveSt();
+      computeRally();
+      dash.setRows('events', window.BTC_EVENTS);
+      renderAll();
+      window.dispatchEvent(new Event('resize'));
+      fill();
+    };
+    const save2 = $('anc-save'); if (save2) save2.addEventListener('click', () => {
+      const price = +ap.value, date = ad.value;
+      const topE = (window.BTC_EVENTS || []).find((q) => q.id === 'top4');
+      if (!(price > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { if (ast) ast.textContent = 'Vul een prijs en datum in.'; return; }
+      if (topE && (date <= topE.date || price >= topE.price)) { if (ast) ast.textContent = 'De bodem moet na de top van ' + cy.date(topE.date) + ' liggen en lager zijn.'; return; }
+      if (Date.parse(date) > Date.now()) { if (ast) ast.textContent = 'De datum ligt in de toekomst.'; return; }
+      apply(price, date, true);
+      if (ast) ast.textContent = `Toegepast: ${usd(price)} op ${cy.date(date)}.`;
+    });
+    const reset = $('anc-reset'); if (reset) reset.addEventListener('click', () => {
+      const d = window.BTC_ANCHOR_DEFAULT || { price: 57700, date: '2026-06-15' };
+      apply(d.price, d.date, false);
+      if (ast) ast.textContent = 'Terug naar de standaardbodem.';
     });
     renderLog();
   };
@@ -1560,6 +1666,26 @@ window.hub = (() => {
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
   load();
   setInterval(load, 15 * 60000);
+})();
+</script>
+
+<script>
+// ---- Vaste menubalk: actieve sectie markeren ----
+(() => {
+  const links = [...document.querySelectorAll('.cy-nav a')];
+  const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const secs = [...byId.keys()].map((id) => document.getElementById(id)).filter(Boolean);
+  if (!('IntersectionObserver' in window) || !secs.length) return;
+  const vis = new Map();
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => vis.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
+    const cur = [...vis.entries()].filter(([, v]) => v != null).sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]))[0];
+    if (!cur) return;
+    links.forEach((a) => a.classList.remove('on'));
+    const a = byId.get(cur[0]);
+    if (a) { a.classList.add('on'); a.scrollIntoView({ block: 'nearest', inline: 'center' }); }
+  }, { rootMargin: '-60px 0px -55% 0px' });
+  secs.forEach((s) => io.observe(s));
 })();
 </script>
 
