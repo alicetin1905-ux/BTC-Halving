@@ -114,6 +114,10 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .cy-hand{stroke:var(--color-fg);stroke-width:2.5;stroke-linecap:round}
 .cmp-tiles{margin-top:var(--cds-gap-sm)}
 #cmp-chart{min-height:280px}
+.cy-zone{opacity:.16}
+.cy-zone.z1{fill:var(--color-ok)}.cy-zone.z2{fill:var(--color-warn)}.cy-zone.z3{fill:var(--color-bad)}.cy-zone.z4{fill:#a78bfa}
+.cy-zl{paint-order:stroke;stroke:var(--color-panel);stroke-width:3px;stroke-linejoin:round}
+.sw.zsw{border-radius:2px;opacity:.7}.sw.zsw.z1{background:var(--color-ok)}.sw.zsw.z2{background:var(--color-warn)}.sw.zsw.z3{background:var(--color-bad)}.sw.zsw.z4{background:#a78bfa}
 </style>
 
 <script>
@@ -243,6 +247,14 @@ window.dash = (() => {
       <span><i class="sw proj"></i>Vervolg van 2022</span>
     </div>
     <div class="cy-chart" id="cmp-chart"></div>
+    <h2 style="margin-top:var(--cds-gap-lg)">Bodemscenario's bij een dip in Q4</h2>
+    <p class="cy-note">Berekend vanaf de live prijs, het laagste punt van juni ($57.700) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van juni rond het 200-weeks gemiddelde. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
+    <div class="cy-tw">
+      <table>
+        <thead><tr><th>Scenario</th><th class="r">Bodemzone</th><th class="r">Vanaf nu</th><th class="r">Vanaf top</th></tr></thead>
+        <tbody id="cmp-zones"></tbody>
+      </table>
+    </div>
   </section>
 
   <section class="cy-card" id="klok">
@@ -756,6 +768,35 @@ dash.draw('clock', (el) => {
       .attr('text-anchor', (d) => d === 0 ? 'start' : 'middle').text((d) => d === 0 ? 'top' : 'dag ' + d);
     svg.append('line').attr('class', 'cy-ref').attr('x1', x(N)).attr('x2', x(N)).attr('y1', mt).attr('y2', H - mb);
     svg.append('text').attr('class', 'cy-tick').attr('x', x(N) + 4).attr('y', mt + 10).text('vandaag');
+    // Bodemscenario's als horizontale zones (prijs van deze cyclus → % van de top van 2025)
+    const P = pNow[pNow.length - 1].pct * TOP25.price, LOW = 57700;
+    const zones = [
+      { name: 'Hogere bodem', short: 'hoger', lo: LOW + (P - LOW) * 0.214, hi: LOW + (P - LOW) * 0.382, cls: 'z1' },
+      { name: 'Dubbele bodem', short: 'dubbel', lo: 57000, hi: 60000, cls: 'z2' },
+      { name: '2022-scenario', short: '2022', lo: LOW * 0.88 - 1000, hi: LOW * 0.88 + 1000, cls: 'z3' },
+      { name: 'Volle cyclusdaling', short: 'vol', lo: TOP25.price * 0.28, hi: TOP25.price * 0.30, cls: 'z4' },
+    ];
+    const k = (v) => '$' + d3.format('.0f')(v / 1000) + 'k';
+    const zg = svg.append('g');
+    zones.forEach((z) => {
+      const y1 = y(z.hi / TOP25.price), y2 = y(z.lo / TOP25.price);
+      zg.append('rect').attr('class', 'cy-zone ' + z.cls).attr('x', ml).attr('width', W - mr - ml).attr('y', y1).attr('height', Math.max(3, y2 - y1));
+      zg.append('text').attr('class', 'cy-tick cy-zl').attr('x', W - mr - 4).attr('y', (y1 + y2) / 2).attr('dy', '0.32em').attr('text-anchor', 'end')
+        .text(`${W < 520 ? z.short : z.name} ${k(z.lo)}–${k(z.hi)}`);
+    });
+    const zt = document.getElementById('cmp-zones');
+    if (zt) {
+      zt.replaceChildren();
+      zones.forEach((z) => {
+        const tr = zt.insertRow();
+        const c0 = tr.insertCell(); const sw = document.createElement('i'); sw.className = 'sw zsw ' + z.cls; c0.append(sw, ' ' + z.name);
+        const mid = (z.lo + z.hi) / 2;
+        [[`${cy.usd(Math.round(z.lo / 100) * 100)} – ${cy.usd(Math.round(z.hi / 100) * 100)}`, 'r'],
+         [d3.format('+.0%')(mid / P - 1), 'r'], [d3.format('+.0%')(mid / TOP25.price - 1), 'r']].forEach(([v, c]) => {
+          const td = tr.insertCell(); td.textContent = v; td.className = c;
+        });
+      });
+    }
     const line = d3.line((d) => x(d.day), (d) => y(d.pct));
     const past22 = p22.filter((d) => d.day <= N), fut22 = p22.filter((d) => d.day >= N && d.day <= LEN22);
     svg.append('path').attr('fill', 'none').attr('stroke', '#14b8a6').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('d', line(past22));
