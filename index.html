@@ -428,37 +428,6 @@ window.dash = (() => {
     </div>
   </section>
 
-  <section class="cy-card" id="dca">
-    <h2>DCA-rekenmachine</h2>
-    <p class="cy-note">Wekelijks hetzelfde bedrag kopen, vergeleken met alles ineens op de startdatum (zelfde totaal) en met slim DCA: 2× kopen als de Mayer Multiple onder 1 staat, 1× tussen 1 en 1,5, en niets daarboven. Op dagkoersen, zonder kosten, gewaardeerd tegen de live prijs.</p>
-    <div class="dca-form">
-      <label>Bedrag per week ($) <input id="dca-amt" type="number" value="100" min="1" step="10" inputmode="numeric"></label>
-      <label>Vanaf
-        <select id="dca-from">
-          <option value="2021-11-10">Top 2021 (10 nov 2021)</option>
-          <option value="2022-11-21">Bodem 2022 (21 nov 2022)</option>
-          <option value="2024-04-20">Halving 2024</option>
-          <option value="2025-10-06" selected>Top 2025 (6 okt 2025)</option>
-          <option value="2018-01-01">Begin 2018</option>
-          <option value="2014-01-01">Begin 2014</option>
-        </select>
-      </label>
-    </div>
-    <div class="cy-tw">
-      <table>
-        <thead><tr><th>Strategie</th><th class="r">Ingelegd</th><th class="r">BTC</th><th class="r">Waarde nu</th><th class="r">Rendement</th><th class="r">Gem. prijs</th></tr></thead>
-        <tbody id="dca-body"></tbody>
-      </table>
-    </div>
-    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
-      <span><i class="sw" style="background:#5b8def"></i>Wekelijks DCA</span>
-      <span><i class="sw" style="background:#f7931a"></i>Slim DCA</span>
-      <span><i class="sw" style="background:#a78bfa"></i>Alles ineens</span>
-      <span><i class="sw proj"></i>Ingelegd (DCA)</span>
-    </div>
-    <div class="cy-chart" id="dca-chart" style="min-height:220px"></div>
-  </section>
-
   <section class="cy-card" id="alerts">
     <h2>Alerts</h2>
     <p class="cy-note">Een melding zodra BTC een bodemzone binnengaat, of een week sluit onder de juni-low. Dit werkt zolang deze pagina open staat (ook als tabblad op de achtergrond). Voor meldingen 24/7 met de pagina dicht is een Cloudflare Worker nodig.</p>
@@ -1138,51 +1107,6 @@ window.hub = (() => {
     timeHover(el, svg, W, H, x, rows, (r) => [day(r.t), `${r.v} · ${nl(r.cls)}`]);
   };
 
-  // ---- DCA-rekenmachine ----
-  const renderDca = () => {
-    const body = $('dca-body'); if (!body || !S.daily) return;
-    const amt = Math.max(1, +($('dca-amt').value) || 100);
-    const from = Date.parse($('dca-from').value + 'T00:00:00Z');
-    const rows = S.daily.rows.filter((r) => r.t >= from);
-    if (rows.length < 8) { body.replaceChildren(); return; }
-    const P = livePrice();
-    const st = { dca: { inv: 0, btc: 0 }, smart: { inv: 0, btc: 0 }, lump: { inv: 0, btc: 0 } };
-    const series = [];
-    rows.forEach((r, i) => {
-      if (i % 7 !== 0) return;
-      const m = r.d200 ? r.close / r.d200 : 1;
-      const mult = m < 1 ? 2 : m < 1.5 ? 1 : 0;
-      st.dca.inv += amt; st.dca.btc += amt / r.close;
-      st.smart.inv += amt * mult; st.smart.btc += (amt * mult) / r.close;
-      series.push({ t: r.t, dca: st.dca.btc * r.close, smart: st.smart.btc * r.close, inv: st.dca.inv, invS: st.smart.inv });
-    });
-    st.lump.inv = st.dca.inv; st.lump.btc = st.lump.inv / rows[0].close;
-    series.forEach((s) => { s.lump = st.lump.btc * rows.find((r) => r.t === s.t).close; });
-    const lines = [['Wekelijks DCA', st.dca], ['Slim DCA (Mayer)', st.smart], ['Alles ineens op de startdatum', st.lump]];
-    body.replaceChildren();
-    lines.forEach(([name, s]) => {
-      const tr = body.insertRow();
-      const val = s.btc * P, ret = s.inv ? val / s.inv - 1 : 0;
-      [[name, ''], [usd(Math.round(s.inv)), 'r'], [d3.format(',.4f')(s.btc), 'r'], [usd(Math.round(val)), 'r'], [pct(ret), 'r ' + (ret >= 0 ? 'good' : 'bad')], [s.btc ? usd(Math.round(s.inv / s.btc)) : '—', 'r']]
-        .forEach(([v, c]) => { const td = tr.insertCell(); td.textContent = v; if (c) td.className = c; });
-    });
-    const el = $('dca-chart'); if (!el) return;
-    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 220 : 280);
-    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
-    const x = d3.scaleUtc([new Date(series[0].t), new Date(series[series.length - 1].t)], [ml, W - mr]);
-    const y = d3.scaleLinear([0, d3.max(series, (s) => Math.max(s.dca, s.smart, s.lump, s.inv, s.invS)) * 1.08], [H - mb, mt]).nice();
-    const yt = y.ticks(4);
-    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
-    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => '$' + d3.format('~s')(d));
-    timeAxis(svg, x, W, H);
-    const ln = (k) => d3.line((s) => x(new Date(s.t)), (s) => y(s[k]));
-    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg-muted)').attr('stroke-dasharray', '4 3').attr('stroke-width', 1.5).attr('d', ln('inv')(series));
-    svg.append('path').attr('fill', 'none').style('stroke', '#5b8def').attr('stroke-width', 2).attr('d', ln('dca')(series));
-    svg.append('path').attr('fill', 'none').style('stroke', '#f7931a').attr('stroke-width', 2).attr('d', ln('smart')(series));
-    svg.append('path').attr('fill', 'none').style('stroke', '#a78bfa').attr('stroke-width', 2).attr('d', ln('lump')(series));
-    timeHover(el, svg, W, H, x, series, (s) => [day(s.t), `DCA ${usd(Math.round(s.dca))}`, `Slim DCA ${usd(Math.round(s.smart))} (ingelegd ${usd(Math.round(s.invS))})`, `Ineens ${usd(Math.round(s.lump))}`, `Ingelegd ${usd(Math.round(s.inv))}`]);
-  };
-
   // ---- Alerts ----
   const KEY = 'btcHalvingAlerts.v1';
   const defaults = { on: { z1: true, z2: true, z3: true, z4: true, wk: true }, tg: { token: '', chat: '' }, lastZone: null, lastWeek: null, log: [] };
@@ -1477,13 +1401,12 @@ window.hub = (() => {
   };
   const renderFuture = () => { try { renderPowerLaw(); } catch (e) { console.error(e); } try { renderGhosts(); } catch (e) { console.error(e); } try { renderLgc(); } catch (e) { console.error(e); } };
 
-  const renderAll = () => { renderIndicators(); renderRainbow(); renderFuture(); renderFng(); renderDca(); checkAlerts(); };
+  const renderAll = () => { renderIndicators(); renderRainbow(); renderFuture(); renderFng(); checkAlerts(); };
 
   // start
   initAlerts();
-  ['dca-amt', 'dca-from'].forEach((id) => { const el = $(id); if (el) el.addEventListener('input', renderDca); });
   window.addEventListener('btcprice', () => { renderIndicators(); renderRainbow(); checkAlerts(); });
-  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); renderDca(); }, 150); });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); }, 150); });
   loadDaily(); loadFng(); loadMem();
   setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);
   return { state: S };
