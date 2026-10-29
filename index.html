@@ -118,6 +118,30 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .cy-zone.z1{fill:var(--color-ok)}.cy-zone.z2{fill:var(--color-warn)}.cy-zone.z3{fill:var(--color-bad)}.cy-zone.z4{fill:#a78bfa}
 .cy-zl{paint-order:stroke;stroke:var(--color-panel);stroke-width:3px;stroke-linejoin:round}
 .sw.zsw{border-radius:2px;opacity:.7}.sw.zsw.z1{background:var(--color-ok)}.sw.zsw.z2{background:var(--color-warn)}.sw.zsw.z3{background:var(--color-bad)}.sw.zsw.z4{background:#a78bfa}
+.cy-real{fill:none;stroke:var(--color-fg);stroke-opacity:.55;stroke-width:1.2;stroke-linejoin:round}
+.ind-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9.5rem),1fr));gap:var(--cds-gap-sm)}
+.ind{border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-md)}
+.ind .cy-lbl::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--color-fg-muted);vertical-align:middle}
+.ind.g .cy-lbl::before{background:var(--color-ok)}.ind.y .cy-lbl::before{background:var(--color-warn)}.ind.r .cy-lbl::before{background:var(--color-bad)}
+.ind.g{border-color:color-mix(in srgb,var(--color-ok) 45%,var(--color-border-line))}
+.ind .cy-num{font-size:24px}
+.fng-tiles{margin-bottom:var(--cds-gap-md)}
+.fng-fear{fill:color-mix(in srgb,var(--color-bad) 14%,transparent)}
+.fng-greed{fill:color-mix(in srgb,var(--color-warn) 12%,transparent)}
+.dca-form{display:flex;flex-wrap:wrap;gap:var(--cds-gap-md);margin-bottom:var(--cds-gap-md);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.dca-form label{display:flex;flex-direction:column;gap:4px;flex:1 1 10rem}
+.cy input,.cy select,.cy button{font:inherit;font-size:var(--cds-font-size-body);color:var(--color-fg);background:var(--color-bg);border:1px solid var(--color-border-line);border-radius:8px;padding:7px 10px}
+.cy input[type=checkbox]{padding:0;width:16px;height:16px;accent-color:var(--color-warn)}
+.cy button{cursor:pointer}
+.cy button.primary{background:var(--color-fg);color:var(--color-bg);border-color:var(--color-fg)}
+.cy td.good{color:var(--color-ok)}
+.al-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--cds-gap-sm);margin:var(--cds-gap-sm) 0}
+.al-checks{display:flex;flex-wrap:wrap;gap:var(--cds-gap-sm) var(--cds-gap-lg);font-size:var(--cds-font-size-body);margin:var(--cds-gap-md) 0}
+.al-checks label{display:inline-flex;align-items:center;gap:6px}
+.al-tg{margin:var(--cds-gap-md) 0;font-size:var(--cds-font-size-body)}
+.al-tg summary{cursor:pointer;color:var(--color-fg-muted)}
+.al-log{margin:var(--cds-gap-sm) 0 0;padding-left:1.1rem;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+#ind-chart{min-height:280px}
 </style>
 
 <script>
@@ -187,7 +211,7 @@ window.dash = (() => {
 
   <section class="cy-card" id="koers">
     <h2>Koers sinds 2010 met de vier halvings</h2>
-    <p class="cy-note">Logaritmische schaal: elke rasterlijn is tien keer de vorige. Rode banden zijn de bearmarkten van top naar bodem. Pivotpunten verbonden met rechte lijnen, geen dagkoers.</p>
+    <p class="cy-note">Logaritmische schaal: elke rasterlijn is tien keer de vorige. Rode banden zijn de bearmarkten van top naar bodem. <span id="koers-src">Pivotpunten verbonden met rechte lijnen; dagkoers laden…</span></p>
     <div class="cy-legend">
       <span><i class="sw top"></i>Cyclustop</span>
       <span><i class="sw bodem"></i>Bodem</span>
@@ -197,6 +221,38 @@ window.dash = (() => {
       <span><i class="sw bear"></i>Bearmarkt</span>
     </div>
     <div class="cy-chart" data-draw="chart" data-source="events"></div>
+  </section>
+
+  <section class="cy-card" id="indicatoren">
+    <h2>Bodemindicatoren</h2>
+    <p class="cy-note">Live berekend uit dagkoersen (<span id="ind-src">laden…</span>). Groen betekent dat de indicator in de zone staat waar eerdere cyclusbodems vielen. De bodemscore telt hoeveel van de eerste vier groen zijn.</p>
+    <div class="ind-tiles">
+      <div class="ind" id="ind-score"><div class="cy-lbl">Bodemscore</div><div class="cy-num">—</div><div class="cy-sub">laden…</div></div>
+      <div class="ind" id="ind-wma"><div class="cy-lbl">200-weeks gemiddelde</div><div class="cy-num">—</div><div class="cy-sub"></div></div>
+      <div class="ind" id="ind-mayer"><div class="cy-lbl">Mayer Multiple</div><div class="cy-num">—</div><div class="cy-sub"></div></div>
+      <div class="ind" id="ind-365"><div class="cy-lbl">t.o.v. 365-daags gem.</div><div class="cy-num">—</div><div class="cy-sub"></div></div>
+      <div class="ind" id="ind-fng"><div class="cy-lbl">Fear &amp; Greed</div><div class="cy-num">—</div><div class="cy-sub"></div></div>
+      <div class="ind" id="ind-pi"><div class="cy-lbl">Pi Cycle (top-signaal)</div><div class="cy-num">—</div><div class="cy-sub"></div></div>
+    </div>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:var(--color-fg);opacity:.55"></i>Prijs</span>
+      <span><i class="sw" style="background:var(--color-warn)"></i>200-weeks gem.</span>
+      <span><i class="sw" style="background:#5b8def"></i>365-daags gem.</span>
+      <span><i class="sw proj" style="border-color:#a78bfa"></i>200-daags gem. (Mayer = prijs ÷ deze lijn)</span>
+    </div>
+    <div class="cy-chart" id="ind-chart"></div>
+  </section>
+
+  <section class="cy-card" id="fng">
+    <h2>Fear &amp; Greed-index</h2>
+    <p class="cy-note">0 is extreme angst, 100 extreme hebzucht (alternative.me, sinds 2018). De rode band is extreme angst (onder 25): daar vielen de vorige bodems.</p>
+    <div class="cy-tiles fng-tiles">
+      <div><div class="cy-lbl">Nu</div><div class="cy-num" id="fng-now">—</div><div class="cy-sub" id="fng-now-lbl">laden…</div></div>
+      <div><div class="cy-lbl">Bij bodem dec 2018</div><div class="cy-num" id="fng-b18">—</div></div>
+      <div><div class="cy-lbl">Bij bodem nov 2022</div><div class="cy-num" id="fng-b22">—</div></div>
+      <div><div class="cy-lbl">Bij low juni 2026</div><div class="cy-num" id="fng-b26">—</div></div>
+    </div>
+    <div class="cy-chart" id="fng-chart" style="min-height:220px"></div>
   </section>
 
   <section class="cy-card" id="overlay">
@@ -212,6 +268,7 @@ window.dash = (() => {
       <div class="cy-num" data-draw="cd-days" data-source="events">—</div>
       <div class="cy-sub">dagen te gaan · <b data-draw="cd-pct" data-source="events">—</b> van deze cyclus voorbij</div>
       <div class="cy-bar" data-draw="cd-bar" data-source="events"></div>
+      <p class="cy-sub" id="cd-live">Blokhoogte laden…</p>
     </section>
     <section class="cy-card" id="halvings">
       <h2>Halvings en blokbeloning</h2>
@@ -294,6 +351,61 @@ window.dash = (() => {
         <tbody data-draw="cycletable"></tbody>
       </table>
     </div>
+  </section>
+
+  <section class="cy-card" id="dca">
+    <h2>DCA-rekenmachine</h2>
+    <p class="cy-note">Wekelijks hetzelfde bedrag kopen, vergeleken met alles ineens op de startdatum (zelfde totaal) en met slim DCA: 2× kopen als de Mayer Multiple onder 1 staat, 1× tussen 1 en 1,5, en niets daarboven. Op dagkoersen, zonder kosten, gewaardeerd tegen de live prijs.</p>
+    <div class="dca-form">
+      <label>Bedrag per week ($) <input id="dca-amt" type="number" value="100" min="1" step="10" inputmode="numeric"></label>
+      <label>Vanaf
+        <select id="dca-from">
+          <option value="2021-11-10">Top 2021 (10 nov 2021)</option>
+          <option value="2022-11-21">Bodem 2022 (21 nov 2022)</option>
+          <option value="2024-04-20">Halving 2024</option>
+          <option value="2025-10-06" selected>Top 2025 (6 okt 2025)</option>
+          <option value="2018-01-01">Begin 2018</option>
+          <option value="2014-01-01">Begin 2014</option>
+        </select>
+      </label>
+    </div>
+    <div class="cy-tw">
+      <table>
+        <thead><tr><th>Strategie</th><th class="r">Ingelegd</th><th class="r">BTC</th><th class="r">Waarde nu</th><th class="r">Rendement</th><th class="r">Gem. prijs</th></tr></thead>
+        <tbody id="dca-body"></tbody>
+      </table>
+    </div>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:#5b8def"></i>Wekelijks DCA</span>
+      <span><i class="sw" style="background:#f7931a"></i>Slim DCA</span>
+      <span><i class="sw" style="background:#a78bfa"></i>Alles ineens</span>
+      <span><i class="sw proj"></i>Ingelegd (DCA)</span>
+    </div>
+    <div class="cy-chart" id="dca-chart" style="min-height:220px"></div>
+  </section>
+
+  <section class="cy-card" id="alerts">
+    <h2>Alerts</h2>
+    <p class="cy-note">Een melding zodra BTC een bodemzone binnengaat, of een week sluit onder de juni-low. Dit werkt zolang deze pagina open staat (ook als tabblad op de achtergrond). Voor meldingen 24/7 met de pagina dicht is een Cloudflare Worker nodig.</p>
+    <div class="al-row"><button id="al-perm" class="primary">Browsermeldingen aanzetten</button><span class="cy-sub" id="al-perm-state"></span></div>
+    <div class="al-checks">
+      <label><input type="checkbox" data-al="z1"> Hogere bodem</label>
+      <label><input type="checkbox" data-al="z2"> Dubbele bodem</label>
+      <label><input type="checkbox" data-al="z3"> 2022-scenario</label>
+      <label><input type="checkbox" data-al="z4"> Volle cyclusdaling</label>
+      <label><input type="checkbox" data-al="wk"> Weekslot onder juni-low</label>
+    </div>
+    <details class="al-tg">
+      <summary>Telegram (optioneel)</summary>
+      <p class="cy-note">Maak een bot via @BotFather en vul het token en je chat-id in. Ze worden alleen op dit toestel bewaard.</p>
+      <div class="dca-form">
+        <label>Bot-token <input id="al-tg-token" type="password" autocomplete="off"></label>
+        <label>Chat-id <input id="al-tg-chat" type="text" autocomplete="off"></label>
+      </div>
+      <div class="al-row"><button id="al-tg-save">Opslaan</button><button id="al-tg-test">Testbericht</button><span class="cy-sub" id="al-tg-state"></span></div>
+    </details>
+    <p class="cy-sub">Status: <b id="al-state">—</b></p>
+    <ul class="al-log" id="al-log"></ul>
   </section>
 
   <p class="cy-foot">Prijzen zijn afgerond en verschillen per exchange. Het patroon is historisch, geen garantie voor de toekomst.</p>
@@ -452,7 +564,15 @@ dash.draw('chart', (el) => {
   }
 
   const pts = ev.filter((e) => e.price != null && !e.projectie).sort((a, b) => a.t - b.t);
-  svg.append('path').attr('class', 'cy-line').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(pts));
+  const real = window.hub && window.hub.state.daily ? window.hub.state.daily.rows.filter((r) => r.close >= 0.03) : null;
+  if (real && real.length) {
+    const t0 = real[0].t;
+    const before = pts.filter((d) => d.t.getTime() <= t0);
+    if (before.length) svg.append('path').attr('class', 'cy-line').attr('stroke-dasharray', '4 3').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(before.concat([{ t: new Date(t0), price: real[0].close }])));
+    svg.append('path').attr('class', 'cy-real').attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.close))(real));
+  } else {
+    svg.append('path').attr('class', 'cy-line').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(pts));
+  }
   svg.append('g').selectAll('path').data(pts).join('path')
     .attr('class', (d) => 'cy-pt k-' + d.kind.replace(' ', '-'))
     .attr('transform', (d) => `translate(${x(d.t)},${y(d.price)})`)
@@ -692,6 +812,383 @@ dash.draw('clock', (el) => {
 </script>
 
 <script>
+// ---- Bodemzones (gedeeld door de 2022-grafiek en de alerts) ----
+// Hogere bodem = Fibonacci 0,618–0,786 terug van het herstel (juni-low → hoogste koers sindsdien).
+window.BTC_LOW = 57700;
+window.BTC_TOP = 126080;
+window.btcZones = (P) => {
+  const LOW = window.BTC_LOW, HIGH = Math.max(window.btcRallyHigh || 0, P);
+  return [
+    { name: 'Hogere bodem', short: 'hoger', lo: LOW + (HIGH - LOW) * 0.214, hi: LOW + (HIGH - LOW) * 0.382, cls: 'z1' },
+    { name: 'Dubbele bodem', short: 'dubbel', lo: 57000, hi: 60000, cls: 'z2' },
+    { name: '2022-scenario', short: '2022', lo: LOW * 0.88 - 1000, hi: LOW * 0.88 + 1000, cls: 'z3' },
+    { name: 'Volle cyclusdaling', short: 'vol', lo: window.BTC_TOP * 0.28, hi: window.BTC_TOP * 0.30, cls: 'z4' },
+  ];
+};
+</script>
+
+<script>
+// ---- Datalaag: dagkoersen, Fear & Greed, blokhoogte ----
+window.hub = (() => {
+  const DAY = 864e5;
+  const S = { daily: null, fng: null, mem: null };
+  const $ = (id) => document.getElementById(id);
+  const json = async (u) => { const r = await fetch(u, { cache: 'no-store' }); if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); };
+  const M = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const usd = (v) => cy.usd(v);
+  const pct = (v) => d3.format('+.0%')(v);
+  const day = (t) => cy.date(new Date(t).toISOString().slice(0, 10));
+  const livePrice = () => window.btcLive || (S.daily ? S.daily.rows[S.daily.rows.length - 1].close : null);
+
+  // Volledige dagkoers: CryptoCompare (vanaf 2010), anders Binance (2017), anders Bybit (2020)
+  const fromCryptoCompare = async () => {
+    let to = Math.floor(Date.now() / 1000), out = [];
+    for (let i = 0; i < 4; i++) {
+      const j = await json(`https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=2000&toTs=${to}`);
+      if (j.Response !== 'Success') throw new Error(j.Message || 'CryptoCompare');
+      const all = j.Data.Data, rows = all.filter((d) => d.close > 0);
+      out = rows.map((d) => ({ t: d.time * 1000, close: d.close })).concat(out);
+      if (rows.length < all.length || all.length < 1500) break;
+      to = all[0].time - 86400;
+    }
+    if (out.length < 1000) throw new Error('te weinig data');
+    return { src: 'CryptoCompare', rows: out };
+  };
+  const fromBinance = async (base) => {
+    let start = Date.UTC(2017, 7, 17), out = [];
+    for (let i = 0; i < 8; i++) {
+      const j = await json(`${base}/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=${start}&limit=1000`);
+      if (!Array.isArray(j) || !j.length) break;
+      out = out.concat(j.map((k) => ({ t: +k[0], close: +k[4] })));
+      if (j.length < 1000) break;
+      start = +j[j.length - 1][0] + DAY;
+    }
+    if (!out.length) throw new Error('Binance leeg');
+    return { src: 'Binance', rows: out };
+  };
+  const fromBybit = async () => {
+    let end = Date.now(), out = [];
+    for (let i = 0; i < 4; i++) {
+      const j = await json(`https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=D&end=${end}&limit=1000`);
+      const l = (j.result && j.result.list) || [];
+      if (!l.length) break;
+      out = l.map((k) => ({ t: +k[0], close: +k[4] })).reverse().concat(out);
+      if (l.length < 1000) break;
+      end = +l[l.length - 1][0] - DAY;
+    }
+    if (!out.length) throw new Error('Bybit leeg');
+    return { src: 'Bybit', rows: out };
+  };
+
+  const enrich = (rows) => {
+    rows = [...new Map(rows.map((r) => [Math.floor(r.t / DAY), { t: Math.floor(r.t / DAY) * DAY, close: r.close }])).values()].sort((a, b) => a.t - b.t);
+    const sma = (n, key) => { let s = 0; rows.forEach((r, i) => { s += r.close; if (i >= n) s -= rows[i - n].close; r[key] = i >= n - 1 ? s / n : null; }); };
+    sma(200, 'd200'); sma(365, 'd365'); sma(111, 'd111'); sma(350, 'd350');
+    const wk = []; let ws = 0, w200 = null; // 200-weeks gemiddelde uit de zondagsluitingen
+    rows.forEach((r) => {
+      if (new Date(r.t).getUTCDay() === 0) {
+        wk.push(r.close); ws += r.close;
+        if (wk.length > 200) ws -= wk[wk.length - 201];
+        w200 = wk.length >= 200 ? ws / 200 : null;
+      }
+      r.w200 = w200;
+    });
+    return rows;
+  };
+
+  const loadDaily = async () => {
+    const tries = [fromCryptoCompare, () => fromBinance('https://api.binance.com'), () => fromBinance('https://data-api.binance.vision'), fromBybit];
+    for (const f of tries) {
+      try { const d = await f(); S.daily = { src: d.src, rows: enrich(d.rows) }; break; } catch (e) { console.warn(e); }
+    }
+    if (!S.daily) { setText('ind-src', 'koersdata niet bereikbaar'); return; }
+    const after = S.daily.rows.filter((r) => r.t >= Date.UTC(2026, 5, 15));
+    window.btcRallyHigh = after.length ? d3.max(after, (r) => r.close) : null;
+    const first = S.daily.rows[0];
+    setText('ind-src', `${S.daily.src}, dagkoers sinds ${new Date(first.t).getUTCFullYear()}`);
+    setText('koers-src', `Dunne lijn: dagkoers via ${S.daily.src} sinds ${new Date(first.t).getUTCFullYear()}` + (first.t > Date.UTC(2011, 0, 1) ? '; daarvoor verbonden pivotpunten.' : '.'));
+    renderAll();
+    dash.redraw();
+  };
+
+  const loadFng = async () => {
+    try {
+      const j = await json('https://api.alternative.me/fng/?limit=0&format=json');
+      S.fng = j.data.map((d) => ({ t: +d.timestamp * 1000, v: +d.value, cls: d.value_classification })).sort((a, b) => a.t - b.t);
+    } catch (e) { console.warn(e); setText('fng-now-lbl', 'Niet bereikbaar'); }
+    renderAll();
+  };
+
+  const loadMem = async () => {
+    try {
+      const height = +(await (await fetch('https://mempool.space/api/blocks/tip/height', { cache: 'no-store' })).text());
+      const adj = await json('https://mempool.space/api/v1/difficulty-adjustment');
+      if (!(height > 0)) throw new Error('geen blokhoogte');
+      S.mem = { height, timeAvg: adj.timeAvg || 600000 };
+      const h5 = (window.BTC_EVENTS || []).find((e) => e.id === 'halving5');
+      if (h5) {
+        const remaining = h5.block - height;
+        const eta = new Date(Date.now() + remaining * S.mem.timeAvg);
+        S.mem.remaining = remaining; S.mem.eta = eta;
+        window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'halving5' ? { ...e, date: eta.toISOString().slice(0, 10), label: 'Halving 5, verwacht (3,125 → 1,5625 BTC)' } : e);
+        dash.setRows('events', window.BTC_EVENTS);
+        setText('cd-live', `Live via mempool.space: blok ${d3.format(',')(height)}, nog ${d3.format(',')(remaining)} blokken, gemiddeld ${d3.format('.1f')(S.mem.timeAvg / 60000)} min per blok → ${day(eta.getTime())}.`);
+      }
+    } catch (e) { console.warn(e); setText('cd-live', 'Blokhoogte niet bereikbaar; de datum is een schatting.'); }
+  };
+
+  const setText = (id, t) => { const el = $(id); if (el) el.textContent = t; };
+  const tile = (id, state, num, sub) => {
+    const el = $(id); if (!el) return;
+    el.classList.remove('g', 'y', 'r'); if (state) el.classList.add(state);
+    el.querySelector('.cy-num').textContent = num; el.querySelector('.cy-sub').textContent = sub;
+  };
+
+  // ---- grafiekhulpjes ----
+  const frame = (el, H) => {
+    el.replaceChildren();
+    const W = el.clientWidth || 600;
+    const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    return { W, H, svg };
+  };
+  const timeAxis = (svg, x, W, H) => {
+    const [a, b] = x.domain(), long = b - a > 3 * 365 * DAY;
+    svg.append('g').selectAll('text').data(x.ticks(W < 520 ? 4 : 7)).join('text').attr('class', 'cy-tick')
+      .attr('x', x).attr('y', H - 8).attr('text-anchor', 'middle')
+      .text((d) => long ? d.getUTCFullYear() : `${M[d.getUTCMonth()]} '${String(d.getUTCFullYear()).slice(2)}`);
+  };
+  const timeHover = (el, svg, W, H, x, rows, lines) => {
+    const tip = document.createElement('div'); tip.className = 'cy-tip'; tip.hidden = true; el.append(tip);
+    const rule = svg.append('line').attr('class', 'cy-focus').attr('y1', 4).attr('y2', H - 24).attr('visibility', 'hidden');
+    const bis = d3.bisector((r) => r.t).center;
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'transparent')
+      .on('pointermove', (e) => {
+        const r = rows[bis(rows, x.invert(d3.pointer(e)[0]).getTime())]; if (!r) return;
+        const px = x(new Date(r.t));
+        rule.attr('x1', px).attr('x2', px).attr('visibility', 'visible');
+        tip.replaceChildren();
+        lines(r).forEach((t, i) => { const d = document.createElement('div'); d.className = i ? 'v' : 'd'; d.textContent = t; tip.append(d); });
+        tip.hidden = false;
+        const s = el.clientWidth / W; let left = px * s + 12;
+        if (left + tip.offsetWidth > el.clientWidth) left = px * s - tip.offsetWidth - 12;
+        tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '6px';
+      })
+      .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); });
+  };
+  const logTicks = (y) => { const [a, b] = y.domain(); return [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000].filter((v) => v >= a && v <= b); };
+
+  // ---- Bodemindicatoren ----
+  const renderIndicators = () => {
+    if (!S.daily) return;
+    const rows = S.daily.rows, last = rows[rows.length - 1], P = livePrice();
+    let score = 0, scored = 0;
+    const add = (ok) => { scored++; if (ok) score++; };
+    if (last.w200) {
+      const r = P / last.w200; add(r < 1.15);
+      tile('ind-wma', r < 1.15 ? 'g' : r < 1.5 ? 'y' : 'r', usd(last.w200), `Prijs ${pct(r - 1)} t.o.v. het 200W-gemiddelde. Bodems raakten het telkens.`);
+    }
+    if (last.d200) {
+      const m = P / last.d200; add(m < 0.8);
+      tile('ind-mayer', m < 0.8 ? 'g' : m < 2.4 ? 'y' : 'r', d3.format('.2f')(m), m < 0.8 ? 'Onder 0,8: historische koopzone' : m < 1.5 ? 'Neutraal (koopzone onder 0,8)' : m < 2.4 ? 'Verhoogd' : 'Boven 2,4: oververhit');
+    }
+    if (last.d365) {
+      const dd = P / last.d365 - 1; add(dd < 0);
+      tile('ind-365', dd < 0 ? 'g' : 'y', pct(dd), dd < 0 ? 'Onder het 365-daags gemiddelde (bearfase)' : `Boven het 365-daags gemiddelde (${usd(last.d365)})`);
+    }
+    if (S.fng && S.fng.length) {
+      const f = S.fng[S.fng.length - 1]; add(f.v < 25);
+      tile('ind-fng', f.v < 25 ? 'g' : f.v < 55 ? 'y' : 'r', String(f.v), nl(f.cls) + ' (bodems: onder 25)');
+    }
+    if (last.d111 && last.d350) {
+      const pi = last.d111 / (2 * last.d350);
+      tile('ind-pi', pi > 0.95 ? 'r' : pi > 0.8 ? 'y' : 'g', d3.format('.0%')(pi), 'Top-signaal bij 100% (111D kruist 2×350D)');
+    }
+    if (scored) {
+      tile('ind-score', score >= 3 ? 'g' : score === 2 ? 'y' : 'r', `${score}/${scored}`,
+        score >= 3 ? 'Typisch bodemgebied' : score === 2 ? 'Gemengd beeld' : 'Weinig bodemsignalen');
+    }
+    drawInd();
+  };
+  const drawInd = () => {
+    const el = $('ind-chart'); if (!el || !S.daily) return;
+    const rows = S.daily.rows.filter((r) => r.t >= Date.UTC(2015, 0, 1));
+    if (rows.length < 10) return;
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 280 : 360);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
+    const x = d3.scaleUtc([new Date(rows[0].t), new Date(rows[rows.length - 1].t)], [ml, W - mr]);
+    const vals = rows.flatMap((r) => [r.close, r.w200, r.d365].filter((v) => v));
+    const y = d3.scaleLog([d3.min(vals) * 0.85, d3.max(vals) * 1.15], [H - mb, mt]);
+    const yt = logTicks(y);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => '$' + d3.format('~s')(d));
+    timeAxis(svg, x, W, H);
+    const ln = (k) => d3.line().defined((r) => r[k] != null).x((r) => x(new Date(r.t))).y((r) => y(r[k]));
+    svg.append('path').attr('fill', 'none').attr('stroke', 'var(--color-fg)').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.55).attr('stroke-width', 1.2).attr('d', ln('close')(rows));
+    svg.append('path').attr('fill', 'none').style('stroke', '#a78bfa').attr('stroke-width', 1.5).attr('stroke-dasharray', '4 3').attr('d', ln('d200')(rows));
+    svg.append('path').attr('fill', 'none').style('stroke', '#5b8def').attr('stroke-width', 2).attr('d', ln('d365')(rows));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', 2.5).attr('d', ln('w200')(rows));
+    timeHover(el, svg, W, H, x, rows, (r) => [day(r.t), `Prijs ${usd(r.close)}`,
+      ...(r.w200 ? [`200W-gem. ${usd(r.w200)}`] : []), ...(r.d365 ? [`365D-gem. ${usd(r.d365)}`] : []), ...(r.d200 ? [`Mayer ${d3.format('.2f')(r.close / r.d200)}`] : [])]);
+  };
+
+  // ---- Fear & Greed ----
+  const nl = (c) => ({ 'Extreme Fear': 'Extreme angst', Fear: 'Angst', Neutral: 'Neutraal', Greed: 'Hebzucht', 'Extreme Greed': 'Extreme hebzucht' }[c] || c);
+  const fngAt = (iso) => {
+    if (!S.fng) return null;
+    const t = Date.parse(iso + 'T00:00:00Z'); return d3.least(S.fng, (f) => Math.abs(f.t - t));
+  };
+  const renderFng = () => {
+    if (!S.fng || !S.fng.length) return;
+    const now = S.fng[S.fng.length - 1];
+    setText('fng-now', String(now.v)); setText('fng-now-lbl', nl(now.cls));
+    [['fng-b18', '2018-12-15'], ['fng-b22', '2022-11-21'], ['fng-b26', '2026-06-15']].forEach(([id, iso]) => {
+      const f = fngAt(iso); setText(id, f && Math.abs(f.t - Date.parse(iso)) < 7 * DAY ? String(f.v) : '—');
+    });
+    const el = $('fng-chart'); if (!el) return;
+    const rows = S.fng;
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 220 : 260);
+    const ml = cy.measure(svg, '100') + 10, mr = 12, mt = 10, mb = 26;
+    const x = d3.scaleUtc([new Date(rows[0].t), new Date(rows[rows.length - 1].t)], [ml, W - mr]);
+    const y = d3.scaleLinear([0, 100], [H - mb, mt]);
+    svg.append('rect').attr('class', 'fng-fear').attr('x', ml).attr('width', W - mr - ml).attr('y', y(25)).attr('height', y(0) - y(25));
+    svg.append('rect').attr('class', 'fng-greed').attr('x', ml).attr('width', W - mr - ml).attr('y', y(100)).attr('height', y(75) - y(100));
+    svg.append('g').selectAll('text').data([0, 25, 50, 75, 100]).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
+    timeAxis(svg, x, W, H);
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.7).attr('stroke-width', 1.2)
+      .attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.v))(rows));
+    const bottoms = [['2018-12-15', 'bodem 2018'], ['2022-11-21', 'bodem 2022'], ['2026-06-15', 'low 2026']].map(([iso, lbl]) => ({ f: fngAt(iso), lbl })).filter((b) => b.f);
+    const g = svg.append('g').selectAll('g').data(bottoms).join('g').attr('transform', (b) => `translate(${x(new Date(b.f.t))},${y(b.f.v)})`);
+    g.append('circle').attr('r', 5).attr('class', 'cy-pt k-bodem');
+    g.append('text').attr('class', 'cy-lab').attr('y', -9).attr('text-anchor', 'middle').text((b) => b.lbl);
+    timeHover(el, svg, W, H, x, rows, (r) => [day(r.t), `${r.v} · ${nl(r.cls)}`]);
+  };
+
+  // ---- DCA-rekenmachine ----
+  const renderDca = () => {
+    const body = $('dca-body'); if (!body || !S.daily) return;
+    const amt = Math.max(1, +($('dca-amt').value) || 100);
+    const from = Date.parse($('dca-from').value + 'T00:00:00Z');
+    const rows = S.daily.rows.filter((r) => r.t >= from);
+    if (rows.length < 8) { body.replaceChildren(); return; }
+    const P = livePrice();
+    const st = { dca: { inv: 0, btc: 0 }, smart: { inv: 0, btc: 0 }, lump: { inv: 0, btc: 0 } };
+    const series = [];
+    rows.forEach((r, i) => {
+      if (i % 7 !== 0) return;
+      const m = r.d200 ? r.close / r.d200 : 1;
+      const mult = m < 1 ? 2 : m < 1.5 ? 1 : 0;
+      st.dca.inv += amt; st.dca.btc += amt / r.close;
+      st.smart.inv += amt * mult; st.smart.btc += (amt * mult) / r.close;
+      series.push({ t: r.t, dca: st.dca.btc * r.close, smart: st.smart.btc * r.close, inv: st.dca.inv, invS: st.smart.inv });
+    });
+    st.lump.inv = st.dca.inv; st.lump.btc = st.lump.inv / rows[0].close;
+    series.forEach((s) => { s.lump = st.lump.btc * rows.find((r) => r.t === s.t).close; });
+    const lines = [['Wekelijks DCA', st.dca], ['Slim DCA (Mayer)', st.smart], ['Alles ineens op de startdatum', st.lump]];
+    body.replaceChildren();
+    lines.forEach(([name, s]) => {
+      const tr = body.insertRow();
+      const val = s.btc * P, ret = s.inv ? val / s.inv - 1 : 0;
+      [[name, ''], [usd(Math.round(s.inv)), 'r'], [d3.format(',.4f')(s.btc), 'r'], [usd(Math.round(val)), 'r'], [pct(ret), 'r ' + (ret >= 0 ? 'good' : 'bad')], [s.btc ? usd(Math.round(s.inv / s.btc)) : '—', 'r']]
+        .forEach(([v, c]) => { const td = tr.insertCell(); td.textContent = v; if (c) td.className = c; });
+    });
+    const el = $('dca-chart'); if (!el) return;
+    const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 220 : 280);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
+    const x = d3.scaleUtc([new Date(series[0].t), new Date(series[series.length - 1].t)], [ml, W - mr]);
+    const y = d3.scaleLinear([0, d3.max(series, (s) => Math.max(s.dca, s.smart, s.lump, s.inv, s.invS)) * 1.08], [H - mb, mt]).nice();
+    const yt = y.ticks(4);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => '$' + d3.format('~s')(d));
+    timeAxis(svg, x, W, H);
+    const ln = (k) => d3.line((s) => x(new Date(s.t)), (s) => y(s[k]));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg-muted)').attr('stroke-dasharray', '4 3').attr('stroke-width', 1.5).attr('d', ln('inv')(series));
+    svg.append('path').attr('fill', 'none').style('stroke', '#5b8def').attr('stroke-width', 2).attr('d', ln('dca')(series));
+    svg.append('path').attr('fill', 'none').style('stroke', '#f7931a').attr('stroke-width', 2).attr('d', ln('smart')(series));
+    svg.append('path').attr('fill', 'none').style('stroke', '#a78bfa').attr('stroke-width', 2).attr('d', ln('lump')(series));
+    timeHover(el, svg, W, H, x, series, (s) => [day(s.t), `DCA ${usd(Math.round(s.dca))}`, `Slim DCA ${usd(Math.round(s.smart))} (ingelegd ${usd(Math.round(s.invS))})`, `Ineens ${usd(Math.round(s.lump))}`, `Ingelegd ${usd(Math.round(s.inv))}`]);
+  };
+
+  // ---- Alerts ----
+  const KEY = 'btcHalvingAlerts.v1';
+  const defaults = { on: { z1: true, z2: true, z3: true, z4: true, wk: true }, tg: { token: '', chat: '' }, lastZone: null, lastWeek: null, log: [] };
+  const loadSt = () => { try { return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (e) { return { ...defaults }; } };
+  let AL = loadSt();
+  const saveSt = () => { try { localStorage.setItem(KEY, JSON.stringify(AL)); } catch (e) { /* opslag niet beschikbaar */ } };
+  const renderLog = () => {
+    const ul = $('al-log'); if (!ul) return;
+    ul.replaceChildren();
+    AL.log.slice(-8).reverse().forEach((l) => { const li = document.createElement('li'); li.textContent = l; ul.append(li); });
+  };
+  const sendTelegram = async (msg) => {
+    if (!AL.tg.token || !AL.tg.chat) return false;
+    const r = await fetch(`https://api.telegram.org/bot${AL.tg.token}/sendMessage`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: AL.tg.chat, text: msg }),
+    });
+    return r.ok;
+  };
+  const notify = (msg) => {
+    const stamp = new Date().toLocaleString('nl-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    AL.log.push(`${stamp} · ${msg}`); AL.log = AL.log.slice(-30); saveSt(); renderLog();
+    try { if ('Notification' in window && Notification.permission === 'granted') new Notification('BTC Halving', { body: msg }); } catch (e) { /* geen meldingen */ }
+    sendTelegram(msg).catch(() => {});
+  };
+  const checkAlerts = () => {
+    const P = livePrice(); if (!P) return;
+    const zones = window.btcZones(P);
+    const z = zones.find((q) => P >= q.lo && P <= q.hi);
+    const id = z ? z.cls : null;
+    if (id && id !== AL.lastZone && AL.on[id]) notify(`BTC ${usd(Math.round(P))} zit in de zone "${z.name}" (${usd(Math.round(z.lo))} – ${usd(Math.round(z.hi))}).`);
+    AL.lastZone = id;
+    if (S.daily) {
+      const done = S.daily.rows.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= Date.now());
+      const wk = done[done.length - 1];
+      if (wk && wk.close < window.BTC_LOW && AL.lastWeek !== wk.t && AL.on.wk) {
+        notify(`Weekslot ${usd(Math.round(wk.close))} onder de juni-low van ${usd(window.BTC_LOW)}: het 2022-scenario wordt waarschijnlijker.`);
+        AL.lastWeek = wk.t;
+      }
+    }
+    saveSt();
+    if (z) setText('al-state', `In zone "${z.name}" (${usd(Math.round(P))}).`);
+    else {
+      const below = zones.filter((q) => q.hi < P).sort((a, b) => b.hi - a.hi)[0];
+      setText('al-state', below ? `${usd(Math.round(P))}: ${d3.format('.1%')(P / below.hi - 1)} boven de zone "${below.name}".` : `${usd(Math.round(P))}: onder alle zones.`);
+    }
+  };
+  const initAlerts = () => {
+    const perm = $('al-perm'), ps = $('al-perm-state');
+    const showPerm = () => { if (ps) ps.textContent = !('Notification' in window) ? 'Niet ondersteund in deze browser' : Notification.permission === 'granted' ? 'Aan' : Notification.permission === 'denied' ? 'Geblokkeerd in de browserinstellingen' : 'Uit'; };
+    if (perm) perm.addEventListener('click', async () => { try { await Notification.requestPermission(); } catch (e) { /* */ } showPerm(); });
+    showPerm();
+    document.querySelectorAll('[data-al]').forEach((cb) => {
+      cb.checked = !!AL.on[cb.dataset.al];
+      cb.addEventListener('change', () => { AL.on[cb.dataset.al] = cb.checked; saveSt(); });
+    });
+    const tok = $('al-tg-token'), chat = $('al-tg-chat');
+    if (tok) tok.value = AL.tg.token; if (chat) chat.value = AL.tg.chat;
+    const save = $('al-tg-save'), test = $('al-tg-test'), tgs = $('al-tg-state');
+    if (save) save.addEventListener('click', () => { AL.tg = { token: tok.value.trim(), chat: chat.value.trim() }; saveSt(); if (tgs) tgs.textContent = 'Opgeslagen op dit toestel.'; });
+    if (test) test.addEventListener('click', async () => {
+      AL.tg = { token: tok.value.trim(), chat: chat.value.trim() }; saveSt();
+      try { const ok = await sendTelegram('Testbericht van je BTC Halving-dashboard ✅'); if (tgs) tgs.textContent = ok ? 'Test verstuurd.' : 'Versturen mislukt: controleer token en chat-id.'; }
+      catch (e) { if (tgs) tgs.textContent = 'Versturen mislukt: Telegram niet bereikbaar.'; }
+    });
+    renderLog();
+  };
+
+  const renderAll = () => { renderIndicators(); renderFng(); renderDca(); checkAlerts(); };
+
+  // start
+  initAlerts();
+  ['dca-amt', 'dca-from'].forEach((id) => { const el = $(id); if (el) el.addEventListener('input', renderDca); });
+  window.addEventListener('btcprice', () => { renderIndicators(); checkAlerts(); });
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderFng(); renderDca(); }, 150); });
+  loadDaily(); loadFng(); loadMem();
+  setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);
+  return { state: S };
+})();
+</script>
+
+<script>
 // ---- 2022 vs nu: dagkoersen van Bybit (fallback Binance), in de browser berekend ----
 (() => {
   const DAY = 864e5;
@@ -769,13 +1266,8 @@ dash.draw('clock', (el) => {
     svg.append('line').attr('class', 'cy-ref').attr('x1', x(N)).attr('x2', x(N)).attr('y1', mt).attr('y2', H - mb);
     svg.append('text').attr('class', 'cy-tick').attr('x', x(N) + 4).attr('y', mt + 10).text('vandaag');
     // Bodemscenario's als horizontale zones (prijs van deze cyclus → % van de top van 2025)
-    const P = pNow[pNow.length - 1].pct * TOP25.price, LOW = 57700;
-    const zones = [
-      { name: 'Hogere bodem', short: 'hoger', lo: LOW + (P - LOW) * 0.214, hi: LOW + (P - LOW) * 0.382, cls: 'z1' },
-      { name: 'Dubbele bodem', short: 'dubbel', lo: 57000, hi: 60000, cls: 'z2' },
-      { name: '2022-scenario', short: '2022', lo: LOW * 0.88 - 1000, hi: LOW * 0.88 + 1000, cls: 'z3' },
-      { name: 'Volle cyclusdaling', short: 'vol', lo: TOP25.price * 0.28, hi: TOP25.price * 0.30, cls: 'z4' },
-    ];
+    const P = pNow[pNow.length - 1].pct * TOP25.price;
+    const zones = window.btcZones(P);
     const k = (v) => '$' + d3.format('.0f')(v / 1000) + 'k';
     const zg = svg.append('g');
     zones.forEach((z) => {
@@ -862,6 +1354,8 @@ dash.draw('clock', (el) => {
       const rows = window.BTC_EVENTS.map((e) => e.id === 'now' ? { ...e, price: p, date: today, label: 'Live prijs (Bybit BTCUSDT)' } : e);
       window.BTC_EVENTS = rows;
       dash.setRows('events', rows);
+      window.btcLive = p;
+      window.dispatchEvent(new CustomEvent('btcprice', { detail: p }));
       if (note) note.textContent = 'Live via Bybit · ' + new Date().toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {
       if (note) note.textContent = 'Laatst bekende koers (live niet bereikbaar)';
