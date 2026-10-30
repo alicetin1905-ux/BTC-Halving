@@ -191,7 +191,7 @@ const runAnalyse = async () => {
   for (const sym of list) {
     try {
       const L = await analyseCoin(sym);
-      L.forEach((l) => gh('notice', l));
+      gh('notice', L.join('\n'));   // één melding per munt (GitHub toont max. 10 per stap)
       summary(`### ${sym}: 200W EMA vs MA\n\n` + L.map((l) => `- ${l}`).join('\n'));
       console.log(L.join('\n'));
     } catch (e) { gh('error', `[${sym}] ${e.message}`); }
