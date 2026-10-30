@@ -4,7 +4,14 @@ on:
   schedule:
     # Maandag 00:15 UTC, net na de weeksluiting van zondag (01:15 in België in de winter, 02:15 in de zomer)
     - cron: '15 0 * * 1'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'report = weekrapport naar ntfy, analyse = 200W EMA vs MA (geen melding)'
+        required: false
+        default: report
+        type: choice
+        options: [report, analyse]
 
 permissions:
   contents: read
@@ -25,3 +32,4 @@ jobs:
           NTFY_SERVER: ${{ vars.NTFY_SERVER }}
           PAGE_URL: ${{ vars.PAGE_URL || 'https://alicetin1905-ux.github.io/BTC-Halving/#wma' }}
           CRYPTOCOMPARE_KEY: ${{ secrets.CRYPTOCOMPARE_KEY }}
+          MODE: ${{ inputs.mode || 'report' }}

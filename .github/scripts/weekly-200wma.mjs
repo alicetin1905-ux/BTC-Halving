@@ -29,13 +29,15 @@ const sources = {
     if (j.Response !== 'Success') throw new Error('CryptoCompare: ' + (j.Message || 'fout'));
     return j.Data.Data.filter((d) => d.close > 0).map((d) => ({ t: d.time * 1000, close: d.close }));
   },
-  async bitstamp() {
+  async bitstamp(pages = 2) {
     let out = [], end = Math.floor(Date.now() / 1000);
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < pages; i++) {
       const j = await getJson(`https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=86400&limit=1000&end=${end}`);
-      const rows = j.data.ohlc.map((k) => ({ t: +k.timestamp * 1000, close: +k.close }));
-      out = rows.concat(out);
-      end = +j.data.ohlc[0].timestamp - 86400;
+      const ohlc = j.data.ohlc.filter((k) => +k.close > 0);
+      if (!ohlc.length) break;
+      out = ohlc.map((k) => ({ t: +k.timestamp * 1000, close: +k.close })).concat(out);
+      end = +ohlc[0].timestamp - 86400;
+      if (ohlc.length < 1000) break;
     }
     return out;
   },
@@ -115,7 +117,53 @@ export const message = (c, src) => {
   return { title: `BTC weekslot · 200WMA ${fmt(c.wma)}`, body: lines.join('\n') };
 };
 
+// ---- Analyse: 200-weeks EMA vs MA over de volledige historie (sinds 2011) ----
+export const analyse = (rows, now = Date.now()) => {
+  const weeks = rows.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= now);
+  const N = 200, k = 2 / (N + 1);
+  let ema = null, sum = 0;
+  const out = weeks.map((w, i) => {
+    sum += w.close; if (i >= N) sum -= weeks[i - N].close;
+    const sma = i >= N - 1 ? sum / N : null;
+    if (i === N - 1) ema = sma;                       // start met de SMA van de eerste 200 weken (zoals TradingView)
+    else if (i >= N) ema = w.close * k + ema * (1 - k);
+    return { t: w.t, close: w.close, sma, ema: i >= N - 1 ? ema : null };
+  });
+  return out;
+};
+
+const runAnalyse = async () => {
+  const rows = await sources.bitstamp(8);
+  const byDay = new Map(rows.map((r) => [Math.floor(r.t / DAY), r.close]));
+  const clean = [...byDay.entries()].map(([d, close]) => ({ t: d * DAY, close })).sort((a, b) => a.t - b.t);
+  const a = analyse(clean);
+  const last = a[a.length - 1], prev4 = a[a.length - 5];
+  const lines = [
+    `Data: Bitstamp, ${a.length} weken (${day(a[0].t)} – ${day(last.t)})`,
+    `Weekslot ${day(last.t)}: ${fmt(last.close)}`,
+    `200W MA:  ${fmt(last.sma)} · prijs ${pct(last.close / last.sma - 1)} · 4 weken: ${sign(last.sma - prev4.sma)}`,
+    `200W EMA: ${fmt(last.ema)} · prijs ${pct(last.close / last.ema - 1)} · 4 weken: ${sign(last.ema - prev4.ema)}`,
+    `EMA t.o.v. MA: ${sign(last.ema - last.sma)} (${pct(last.ema / last.sma - 1)})`,
+  ];
+  // Bij de cyclusbodems: waar stonden prijs, MA en EMA?
+  const lows = [['2015-01-14', 'Bodem 2015'], ['2018-12-15', 'Bodem 2018'], ['2020-03-15', 'COVID 2020'], ['2022-11-21', 'Bodem 2022'], ['2026-06-15', 'Low 2026']];
+  lows.forEach(([iso, lbl]) => {
+    const t = Date.parse(iso);
+    const w = a.reduce((b, x) => Math.abs(x.t - t) < Math.abs(b.t - t) ? x : b);
+    const lowDay = clean.filter((r) => Math.abs(r.t - t) <= 10 * DAY).reduce((m, r) => r.close < m.close ? r : m, { close: Infinity });
+    if (w.sma) lines.push(`${lbl}: low ${fmt(lowDay.close)} · MA ${fmt(w.sma)} (${pct(lowDay.close / w.sma - 1)}) · EMA ${w.ema ? fmt(w.ema) + ' (' + pct(lowDay.close / w.ema - 1) + ')' : '—'}`);
+  });
+  // Laatste kruising EMA/MA
+  let cross = null;
+  for (let i = a.length - 1; i > 0; i--) { const d1 = a[i].ema - a[i].sma, d0 = a[i - 1].ema - a[i - 1].sma; if (a[i - 1].ema && d1 * d0 < 0) { cross = { t: a[i].t, up: d1 > 0 }; break; } }
+  if (cross) lines.push(`Laatste kruising: ${day(cross.t)} (EMA ${cross.up ? 'boven' : 'onder'} de MA)`);
+  lines.forEach((l) => gh('notice', l));
+  summary('### 200W EMA vs MA\n\n' + lines.map((l) => `- ${l}`).join('\n'));
+  console.log(lines.join('\n'));
+};
+
 const main = async () => {
+  if (process.env.MODE === 'analyse') return runAnalyse();
   const { name, rows } = await loadDaily();
   const c = compute(rows);
   const { title, body } = message(c, name);
