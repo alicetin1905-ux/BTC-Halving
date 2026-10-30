@@ -2,10 +2,19 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1012" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BTC Cyclus">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>BTC Halving Cyclus</title>
 <meta name="description" content="Bitcoin 4-jarige cyclus: tops, bodems en halvings per kwartaal, cyclus-overlay en halving-countdown.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%82%BF%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
 :root{
@@ -29,7 +38,22 @@
 }}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-anthropic-sans);-webkit-text-size-adjust:100%}
-#dash-root{max-width:1200px;margin:0 auto;padding:24px 16px 40px}
+#dash-root{max-width:1200px;margin:0 auto;padding:24px max(16px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))}
+@media (display-mode: standalone){
+  #dash-root{padding-top:8px}
+  .cy-nav{padding-top:calc(10px + env(safe-area-inset-top)) !important;margin-top:0 !important}
+  html,body{overscroll-behavior-y:none}
+}
+@media (display-mode: standalone) and (prefers-color-scheme: light){
+  .cy-nav{background:#0f1012 !important;border-color:#2a2b2f !important}
+  .cy-nav a{background:#17181b !important;border-color:#2a2b2f !important;color:#9a9993 !important}
+  .cy-nav a.on{background:#ecebe7 !important;color:#0f1012 !important;border-color:#ecebe7 !important}
+}
+.ios-hint{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:20;display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--cds-surface-popover);border:1px solid var(--cds-border);box-shadow:var(--cds-shadow-popover);font-size:14px;color:var(--color-fg)}
+.ios-hint img{width:40px;height:40px;border-radius:9px;flex:0 0 auto}
+.ios-hint b{font-weight:600}
+.ios-hint button{margin-left:auto;flex:0 0 auto;font:inherit;background:none;border:0;color:var(--color-fg-muted);font-size:20px;padding:4px 6px;cursor:pointer}
+
 @media (max-width:520px){:root{--cds-font-size-title:24px}}
 
 .cy{display:flex;flex-direction:column;gap:var(--cds-gap-lg);font-family:var(--font-anthropic-sans)}
@@ -1074,7 +1098,7 @@ window.hub = (() => {
       })
       .on('pointerleave', () => { tip.hidden = true; rule.attr('visibility', 'hidden'); });
   };
-  const logTicks = (y) => { const [a, b] = y.domain(); return [1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000, 100000, 300000].filter((v) => v >= a && v <= b); };
+  const logTicks = (y) => { const [a, b] = y.domain(); return [0.1, 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000].flatMap((v) => [v, v * 3]).filter((v) => v >= a && v <= b); };
 
   // ---- Bodemindicatoren ----
   const renderIndicators = () => {
@@ -1189,7 +1213,13 @@ window.hub = (() => {
   const notify = (msg) => {
     const stamp = new Date().toLocaleString('nl-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     AL.log.push(`${stamp} · ${msg}`); AL.log = AL.log.slice(-30); saveSt(); renderLog();
-    try { if ('Notification' in window && Notification.permission === 'granted') new Notification('BTC Halving', { body: msg }); } catch (e) { /* geen meldingen */ }
+    const showLocal = async () => {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+      if (reg) return reg.showNotification('BTC Halving', { body: msg, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'btc-halving' });
+      new Notification('BTC Halving', { body: msg });
+    };
+    showLocal().catch(() => {});
     sendTelegram(msg).catch(() => {});
     sendNtfy(msg).catch(() => {});
   };
@@ -1515,6 +1545,11 @@ window.hub = (() => {
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); }, 150); });
   loadDaily(); loadFng(); loadMem();
   setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);
+  let lastRefresh = Date.now();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || Date.now() - lastRefresh < 5 * 60000) return;
+    lastRefresh = Date.now(); loadDaily(); loadFng(); loadMem();
+  });
   return { state: S };
 })();
 </script>
@@ -1714,8 +1749,28 @@ window.hub = (() => {
   };
   tick();
   setInterval(tick, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
 })();
 </script>
 
+<div class="ios-hint" id="ios-hint" hidden>
+  <img src="icons/apple-touch-icon.png" alt="">
+  <div>Installeer als app: tik op <b>Deel</b> <span aria-hidden="true">⬆︎</span> en dan <b>Zet op beginscherm</b>.</div>
+  <button type="button" id="ios-hint-x" aria-label="Sluiten">×</button>
+</div>
+<script>
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW', e)));
+}
+(() => {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  let seen = false; try { seen = localStorage.getItem('btcHalvingHint') === '1'; } catch (e) {}
+  const el = document.getElementById('ios-hint');
+  if (!el || !ios || standalone || seen) return;
+  el.hidden = false;
+  document.getElementById('ios-hint-x').addEventListener('click', () => { el.hidden = true; try { localStorage.setItem('btcHalvingHint', '1'); } catch (e) {} });
+})();
+</script>
 </body>
 </html>
