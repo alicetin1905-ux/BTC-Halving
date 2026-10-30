@@ -120,12 +120,19 @@ const main = async () => {
   console.log(title + '\n' + body);
   summary(`### ${title}\n\n` + body.split('\n').map((l) => `- ${l}`).join('\n'));
   if (process.env.DRY_RUN) return;
-  const topic = (process.env.NTFY_TOPIC || '').trim();
+  // Accepteert ook een volledige link (https://ntfy.sh/naam, ntfy.sh/naam) en haalt er de naam uit
+  const raw = (process.env.NTFY_TOPIC || '').trim().replace(/^["'<\s]+|["'>\s]+$/g, '');
+  const topic = raw.split(/[/?#]/).filter(Boolean).pop() || '';
+  if (raw && !/^[-_A-Za-z0-9]{1,64}$/.test(topic)) {
+    gh('error', `NTFY_TOPIC is geen geldige ntfy-naam (alleen letters, cijfers, - en _, max. 64 tekens). Lengte nu: ${raw.length} tekens. Vul alleen de naam in, bv. btc-halving-abc123.`);
+    process.exitCode = 1; return;
+  }
   if (!topic) {
     gh('error', 'Geen NTFY_TOPIC-secret gevonden. Zet hem in Settings → Secrets and variables → Actions → New repository secret (naam NTFY_TOPIC, waarde je ntfy-onderwerp). De berekening zelf werkte: zie de samenvatting.');
     process.exitCode = 1; return;
   }
-  const server = (process.env.NTFY_SERVER || 'https://ntfy.sh').trim().replace(/\/+$/, '');
+  const fromUrl = /^https?:\/\//.test(raw) ? new URL(raw).origin : '';
+  const server = (process.env.NTFY_SERVER || fromUrl || 'https://ntfy.sh').trim().replace(/\/+$/, '');
   const payload = {
     topic, title, message: body, priority: c.ratio < 1.1 ? 4 : 3,
     tags: [c.ratio < 1 ? 'rotating_light' : 'chart_with_upwards_trend', 'bitcoin'],
