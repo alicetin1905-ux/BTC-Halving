@@ -21,7 +21,7 @@ const getJson = async (url) => {
   return r.json();
 };
 
-// Dagkoersen: CryptoCompare → Bitstamp → Coinbase (allemaal bereikbaar vanaf GitHub-servers)
+// Dagkoersen: Bitstamp → Coinbase → Binance (→ CryptoCompare met sleutel)
 const sources = {
   async cryptocompare() {
     const key = process.env.CRYPTOCOMPARE_KEY ? `&api_key=${process.env.CRYPTOCOMPARE_KEY}` : '';
@@ -62,7 +62,9 @@ const sources = {
 };
 
 const loadDaily = async () => {
-  for (const [name, fn] of Object.entries(sources)) {
+  // CryptoCompare vraagt sinds kort een sleutel: alleen gebruiken als CRYPTOCOMPARE_KEY bestaat
+  const order = ['bitstamp', 'coinbase', 'binance', ...(process.env.CRYPTOCOMPARE_KEY ? ['cryptocompare'] : [])];
+  for (const [name, fn] of order.map((n) => [n, sources[n]])) {
     try {
       const rows = await fn();
       const byDay = new Map(rows.map((r) => [Math.floor(r.t / DAY), r.close]));
@@ -71,7 +73,7 @@ const loadDaily = async () => {
       gh('warning', `${name}: te weinig dagen (${clean.length})`);
     } catch (e) { gh('warning', `Koersbron ${name} mislukt: ${e.message}`); }
   }
-  throw new Error('Geen enkele koersbron bereikbaar (CryptoCompare, Bitstamp, Binance, Coinbase). Zie de waarschuwingen hierboven.');
+  throw new Error('Geen enkele koersbron bereikbaar (Bitstamp, Coinbase, Binance). Zie de waarschuwingen hierboven.');
 };
 
 // Laatste zondag vóór het einde van een kwartaal (de weeksluiting die daar het dichtst bij ligt)
