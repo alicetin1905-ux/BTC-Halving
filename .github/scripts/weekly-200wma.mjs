@@ -144,18 +144,7 @@ const main = async () => {
   if (!r.ok) throw new Error(`ntfy weigerde het bericht (HTTP ${r.status}): ${await r.text()}`);
   const sent = await r.json().catch(() => ({}));
   const masked = topic.length > 8 ? `${topic.slice(0, 12)}…${topic.slice(-3)}` : '***';
-  // Controle: staat het bericht echt op dit onderwerp?
-  let check = 'niet gecontroleerd';
-  try {
-    const pr = await fetch(`${server}/${encodeURIComponent(topic)}/json?poll=1&since=${sent.id || '5m'}`);
-    const txt = await pr.text();
-    check = sent.id && txt.includes(sent.id) ? 'bericht staat op het onderwerp' : `poll gaf ${txt.trim() ? 'andere berichten' : 'niets'} terug`;
-    if (sent.id) {
-      const all = await (await fetch(`${server}/${encodeURIComponent(topic)}/json?poll=1&since=10m`)).text();
-      check = all.includes(sent.id) ? 'bericht staat op het onderwerp' : check;
-    }
-  } catch (e) { check = 'controle mislukt: ' + e.message; }
-  gh('notice', `Verstuurd naar ${server} · onderwerp "${masked}" (${topic.length} tekens) · id ${sent.id || '?'} · ${check} · ${title}`);
+  gh('notice', `Verstuurd naar ${server} · onderwerp "${masked}" (${topic.length} tekens) · id ${sent.id || '?'} · ${title}`);
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { gh('error', e.message || e); process.exit(1); });
