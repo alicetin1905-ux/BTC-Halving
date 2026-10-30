@@ -6,6 +6,9 @@
 // DRY_RUN=1 toont het bericht zonder te versturen.
 
 const DAY = 864e5;
+import { appendFileSync } from 'node:fs';
+const gh = (level, msg) => console.log(`::${level}::${String(msg).replace(/\r?\n/g, '%0A')}`);
+const summary = (md) => { if (process.env.GITHUB_STEP_SUMMARY) try { appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n'); } catch (e) { /* */ } };
 const fmt = (v) => '$' + Math.round(v).toLocaleString('en-US');
 const pct = (v) => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1).replace('.', ',') + '%';
 const sign = (v) => (v >= 0 ? '+' : '−') + fmt(Math.abs(v));
@@ -36,6 +39,16 @@ const sources = {
     }
     return out;
   },
+  async binance() {
+    let out = [], start = Date.now() - 1500 * DAY;
+    for (let i = 0; i < 2; i++) {
+      const j = await getJson(`https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=${start}&limit=1000`);
+      out = out.concat(j.map((k) => ({ t: +k[0], close: +k[4] })));
+      if (j.length < 1000) break;
+      start = +j[j.length - 1][0] + DAY;
+    }
+    return out;
+  },
   async coinbase() {
     let out = [], end = Date.now();
     for (let i = 0; i < 6; i++) {
@@ -55,10 +68,10 @@ const loadDaily = async () => {
       const byDay = new Map(rows.map((r) => [Math.floor(r.t / DAY), r.close]));
       const clean = [...byDay.entries()].map(([d, close]) => ({ t: d * DAY, close })).sort((a, b) => a.t - b.t);
       if (clean.length >= 1420) return { name, rows: clean };
-      console.warn(`${name}: te weinig dagen (${clean.length})`);
-    } catch (e) { console.warn(`${name}: ${e.message}`); }
+      gh('warning', `${name}: te weinig dagen (${clean.length})`);
+    } catch (e) { gh('warning', `Koersbron ${name} mislukt: ${e.message}`); }
   }
-  throw new Error('Geen koersbron bereikbaar');
+  throw new Error('Geen enkele koersbron bereikbaar (CryptoCompare, Bitstamp, Binance, Coinbase). Zie de waarschuwingen hierboven.');
 };
 
 // Laatste zondag vóór het einde van een kwartaal (de weeksluiting die daar het dichtst bij ligt)
@@ -105,9 +118,13 @@ const main = async () => {
   const c = compute(rows);
   const { title, body } = message(c, name);
   console.log(title + '\n' + body);
+  summary(`### ${title}\n\n` + body.split('\n').map((l) => `- ${l}`).join('\n'));
   if (process.env.DRY_RUN) return;
   const topic = (process.env.NTFY_TOPIC || '').trim();
-  if (!topic) { console.error('Geen NTFY_TOPIC-secret ingesteld: bericht niet verstuurd.'); process.exitCode = 1; return; }
+  if (!topic) {
+    gh('error', 'Geen NTFY_TOPIC-secret gevonden. Zet hem in Settings → Secrets and variables → Actions → New repository secret (naam NTFY_TOPIC, waarde je ntfy-onderwerp). De berekening zelf werkte: zie de samenvatting.');
+    process.exitCode = 1; return;
+  }
   const server = (process.env.NTFY_SERVER || 'https://ntfy.sh').trim().replace(/\/+$/, '');
   const payload = {
     topic, title, message: body, priority: c.ratio < 1.1 ? 4 : 3,
@@ -115,8 +132,8 @@ const main = async () => {
   };
   if (process.env.PAGE_URL) payload.click = process.env.PAGE_URL;
   const r = await fetch(server, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if (!r.ok) throw new Error(`ntfy → HTTP ${r.status}: ${await r.text()}`);
-  console.log('Verstuurd naar ntfy.');
+  if (!r.ok) throw new Error(`ntfy weigerde het bericht (HTTP ${r.status}): ${await r.text()}`);
+  gh('notice', `Verstuurd naar ntfy-onderwerp "${topic.slice(0, 3)}…": ${title}`);
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { console.error(e); process.exit(1); });
+if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { gh('error', e.message || e); process.exit(1); });
