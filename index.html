@@ -187,6 +187,13 @@ html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
 .al-anchor{margin:var(--cds-gap-md) 0;padding-top:var(--cds-gap-sm);border-top:1px solid var(--color-border-line)}
 .al-anchor .fut-h{margin-top:var(--cds-gap-sm)}
+.wma-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:var(--cds-gap-lg);align-items:center;border-color:color-mix(in srgb,var(--color-warn) 45%,var(--color-border-line))}
+.wma-big{font-family:var(--font-anthropic-serif);font-size:40px;line-height:1.1;color:var(--color-warn);font-variant-numeric:tabular-nums;margin:2px 0}
+.wma-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cds-gap-md) var(--cds-gap-lg)}
+.wma-v{font-size:18px;font-weight:500;font-variant-numeric:tabular-nums;margin-top:2px}
+.wma-v.good{color:var(--color-ok)}.wma-v.warn{color:var(--color-warn)}
+.wma-note{grid-column:1/-1;margin:0}
+@media (max-width:600px){.wma-hero{grid-template-columns:1fr}.wma-big{font-size:36px}}
 </style>
 
 <script>
@@ -231,6 +238,7 @@ window.dash = (() => {
 <div class="cy">
   <nav class="cy-nav" aria-label="Secties">
     <a href="#overzicht">Overzicht</a>
+    <a href="#wma">200WMA</a>
     <a href="#koers">Koers</a>
     <a href="#indicatoren">Indicatoren</a>
     <a href="#rainbow">Rainbow</a>
@@ -247,6 +255,21 @@ window.dash = (() => {
     <h1>BTC 4-jarige cyclus</h1>
     <p>Sinds de eerste halving viel elke cyclustop in Q4, gemiddeld <b data-draw="v" data-source="summary" data-row="0" data-field="gem_halving_top" data-fmt="int">—</b> maanden na de halving, en volgde de bodem ongeveer <b data-draw="v" data-source="summary" data-row="0" data-field="gem_top_bodem" data-fmt="int">—</b> maanden later. Deze cyclus zakte BTC <b data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</b> vanaf de top: de kleinste daling ooit.</p>
   </header>
+
+  <section class="cy-card wma-hero" id="wma">
+    <div class="wma-main">
+      <div class="cy-lbl">200-weeks gemiddelde</div>
+      <div class="wma-big" id="wma-val">—</div>
+      <div class="cy-sub" id="wma-sub">laden…</div>
+    </div>
+    <div class="wma-grid">
+      <div><div class="cy-lbl">Prijs t.o.v. 200WMA</div><div class="wma-v" id="wma-dist">—</div></div>
+      <div><div class="cy-lbl">Verandering laatste week</div><div class="wma-v" id="wma-chg">—</div></div>
+      <div><div class="cy-lbl" id="wma-q1-lbl">Verwacht eind kwartaal</div><div class="wma-v" id="wma-q1">—</div></div>
+      <div><div class="cy-lbl" id="wma-q2-lbl">Verwacht volgend kwartaal</div><div class="wma-v" id="wma-q2">—</div></div>
+    </div>
+    <p class="cy-note wma-note">Gemiddelde van de laatste 200 weeksluitingen (zondag, UTC). Verwachting: als de prijs op het niveau van de laatste weeksluiting blijft. Elke maandag komt het herberekende cijfer via ntfy.</p>
+  </section>
 
   <section class="cy-tiles">
     <div class="cy-card">
@@ -502,6 +525,10 @@ window.dash = (() => {
         <label>Server <input id="al-ntfy-server" type="url" value="https://ntfy.sh" autocomplete="off" spellcheck="false"></label>
       </div>
       <div class="al-row"><button id="al-ntfy-rand">Willekeurige naam</button><button id="al-ntfy-save">Opslaan</button><button id="al-ntfy-test" class="primary">Testbericht</button><span class="cy-sub" id="al-ntfy-state"></span></div>
+    </details>
+    <details class="al-tg">
+      <summary>Wekelijks 200WMA-rapport (ook met de app dicht)</summary>
+      <p class="cy-note">Elke maandag rond 01:15 (Belgische tijd) berekent GitHub het nieuwe 200-weeks gemiddelde en stuurt het naar je ntfy-onderwerp. Eenmalig instellen in je repo: Settings → Secrets and variables → Actions → New repository secret, naam <b>NTFY_TOPIC</b>, waarde je onderwerp. Testen kan via Actions → "Wekelijks 200WMA naar ntfy" → Run workflow.</p>
     </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>
@@ -1537,11 +1564,37 @@ window.hub = (() => {
   };
   const renderFuture = () => { try { renderPowerLaw(); } catch (e) { console.error(e); } try { renderGhosts(); } catch (e) { console.error(e); } try { renderLgc(); } catch (e) { console.error(e); } };
 
-  const renderAll = () => { renderIndicators(); renderRainbow(); renderFuture(); renderFng(); checkAlerts(); };
+  // ---- 200WMA-kaart bovenaan (zelfde berekening als het wekelijkse ntfy-rapport) ----
+  const renderWma = () => {
+    if (!S.daily) return;
+    const now = Date.now();
+    const weeks = S.daily.rows.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= now);
+    if (weeks.length < 201) return;
+    const closes = weeks.map((w) => w.close);
+    const avg = (a) => d3.sum(a.slice(-200)) / 200;
+    const wma = avg(closes), prev = avg(closes.slice(0, -1)), last = weeks[weeks.length - 1];
+    const project = (n, price) => { const a = closes.slice(); for (let i = 0; i < n; i++) a.push(price); return avg(a); };
+    const d = new Date(now), q = Math.floor(d.getUTCMonth() / 3);
+    const qs = [0, 1].map((k) => {
+      const y = d.getUTCFullYear() + Math.floor((q + k) / 4), qq = (q + k) % 4;
+      let t = Date.UTC(y, qq * 3 + 3, 0); while (new Date(t).getUTCDay() !== 0) t -= DAY;
+      return { label: `Verwacht eind Q${qq + 1} ${y}`, value: project(Math.max(0, Math.round((t - last.t) / (7 * DAY))), last.close) };
+    });
+    const P = livePrice() || last.close, ratio = P / wma;
+    setText('wma-val', usd(Math.round(wma)));
+    setText('wma-sub', `Na de weeksluiting van ${day(last.t)} (${usd(Math.round(last.close))})`);
+    const dist = $('wma-dist');
+    if (dist) { dist.textContent = `${pct(ratio - 1)} (${usd(Math.round(P))})`; dist.className = 'wma-v ' + (ratio < 1 ? 'good' : ratio < 1.1 ? 'warn' : ''); }
+    setText('wma-chg', (wma - prev >= 0 ? '+' : '−') + usd(Math.round(Math.abs(wma - prev))));
+    setText('wma-q1-lbl', qs[0].label); setText('wma-q1', '±' + usd(Math.round(qs[0].value / 100) * 100));
+    setText('wma-q2-lbl', qs[1].label); setText('wma-q2', '±' + usd(Math.round(qs[1].value / 100) * 100));
+  };
+
+  const renderAll = () => { renderWma(); renderIndicators(); renderRainbow(); renderFuture(); renderFng(); checkAlerts(); };
 
   // start
   initAlerts();
-  window.addEventListener('btcprice', () => { renderIndicators(); renderRainbow(); checkAlerts(); });
+  window.addEventListener('btcprice', () => { renderWma(); renderIndicators(); renderRainbow(); checkAlerts(); });
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); }, 150); });
   loadDaily(); loadFng(); loadMem();
   setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);

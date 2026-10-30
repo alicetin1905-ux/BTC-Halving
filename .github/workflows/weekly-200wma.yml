@@ -1,0 +1,27 @@
+name: Wekelijks 200WMA naar ntfy
+
+on:
+  schedule:
+    # Maandag 00:15 UTC, net na de weeksluiting van zondag (01:15 in België in de winter, 02:15 in de zomer)
+    - cron: '15 0 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 200WMA berekenen en naar ntfy sturen
+        run: node .github/scripts/weekly-200wma.mjs
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ vars.NTFY_SERVER }}
+          PAGE_URL: ${{ vars.PAGE_URL || 'https://alicetin1905-ux.github.io/BTC-Halving/#wma' }}
+          CRYPTOCOMPARE_KEY: ${{ secrets.CRYPTOCOMPARE_KEY }}
