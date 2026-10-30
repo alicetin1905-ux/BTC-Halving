@@ -132,34 +132,70 @@ export const analyse = (rows, now = Date.now()) => {
   return out;
 };
 
-const runAnalyse = async () => {
-  const rows = await sources.bitstamp(8);
+// Volledige dagkoers per munt via Coinbase (ETH sinds 2016, SOL sinds 2021); BTC via Bitstamp (sinds 2011)
+const coinbaseAll = async (product) => {
+  let out = [], end = Date.now();
+  for (let i = 0; i < 40; i++) {
+    const start = end - 299 * DAY;
+    const r = await fetch(`https://api.exchange.coinbase.com/products/${product}/candles?granularity=86400&start=${new Date(start).toISOString()}&end=${new Date(end).toISOString()}`, { headers: { 'User-Agent': 'btc-halving-weekly' } });
+    if (!r.ok) throw new Error(`Coinbase ${product} → HTTP ${r.status}`);
+    const j = await r.json();
+    if (!j.length) break;
+    out = j.map((k) => ({ t: k[0] * 1000, close: k[4] })).concat(out);
+    end = start - DAY;
+    await new Promise((res) => setTimeout(res, 150));
+  }
+  return out;
+};
+const COINS = {
+  BTC: { load: () => sources.bitstamp(8), src: 'Bitstamp', lows: [['2018-12-15', 'Bodem 2018'], ['2020-03-15', 'COVID 2020'], ['2022-11-21', 'Bodem 2022']] },
+  ETH: { load: () => coinbaseAll('ETH-USD'), src: 'Coinbase', lows: [['2018-12-15', 'Bodem 2018'], ['2020-03-15', 'COVID 2020'], ['2022-06-18', 'Bodem jun 2022'], ['2022-11-21', 'Bodem nov 2022']] },
+  SOL: { load: () => coinbaseAll('SOL-USD'), src: 'Coinbase', lows: [['2022-12-29', 'Bodem 2022']] },
+};
+const fmtP = (v) => v >= 1000 ? fmt(v) : '$' + v.toFixed(v < 10 ? 2 : 1).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+const analyseCoin = async (sym) => {
+  const c = COINS[sym];
+  const rows = await c.load();
   const byDay = new Map(rows.map((r) => [Math.floor(r.t / DAY), r.close]));
   const clean = [...byDay.entries()].map(([d, close]) => ({ t: d * DAY, close })).sort((a, b) => a.t - b.t);
   const a = analyse(clean);
   const last = a[a.length - 1], prev4 = a[a.length - 5];
-  const lines = [
-    `Data: Bitstamp, ${a.length} weken (${day(a[0].t)} – ${day(last.t)})`,
-    `Weekslot ${day(last.t)}: ${fmt(last.close)}`,
-    `200W MA:  ${fmt(last.sma)} · prijs ${pct(last.close / last.sma - 1)} · 4 weken: ${sign(last.sma - prev4.sma)}`,
-    `200W EMA: ${fmt(last.ema)} · prijs ${pct(last.close / last.ema - 1)} · 4 weken: ${sign(last.ema - prev4.ema)}`,
-    `EMA t.o.v. MA: ${sign(last.ema - last.sma)} (${pct(last.ema / last.sma - 1)})`,
-  ];
-  // Bij de cyclusbodems: waar stonden prijs, MA en EMA?
-  const lows = [['2015-01-14', 'Bodem 2015'], ['2018-12-15', 'Bodem 2018'], ['2020-03-15', 'COVID 2020'], ['2022-11-21', 'Bodem 2022'], ['2026-06-15', 'Low 2026']];
-  lows.forEach(([iso, lbl]) => {
+  // 100-weeks MA als extra lijn (bruikbaar als de 200W-historie kort is)
+  const wk = a.map((x) => x.close), ma100 = wk.length >= 100 ? wk.slice(-100).reduce((s, v) => s + v, 0) / 100 : null;
+  const L = [`[${sym}] Data: ${c.src}, ${a.length} weken (${day(a[0].t)} – ${day(last.t)}) · weekslot ${fmtP(last.close)}`];
+  if (last.sma) {
+    L.push(`[${sym}] 200W MA ${fmtP(last.sma)} (prijs ${pct(last.close / last.sma - 1)}, 4 wk ${last.sma - prev4.sma >= 0 ? '+' : '−'}${fmtP(Math.abs(last.sma - prev4.sma))}) · 200W EMA ${fmtP(last.ema)} (prijs ${pct(last.close / last.ema - 1)})`);
+  } else L.push(`[${sym}] Nog geen 200 weken data: 200W MA/EMA niet te berekenen`);
+  if (ma100) L.push(`[${sym}] 100W MA ${fmtP(ma100)} (prijs ${pct(last.close / ma100 - 1)})`);
+  // cyclus: hoogste slot sinds 2024 en laagste slot sinds de BTC-top (6 okt 2025)
+  const since = (iso) => clean.filter((r) => r.t >= Date.parse(iso));
+  const top = since('2024-01-01').reduce((m, r) => r.close > m.close ? r : m);
+  const low = since(new Date(top.t).toISOString().slice(0, 10)).reduce((m, r) => r.close < m.close ? r : m);
+  const wAt = (t) => a.reduce((b, x) => Math.abs(x.t - t) < Math.abs(b.t - t) ? x : b);
+  const wl = wAt(low.t);
+  L.push(`[${sym}] Cyclustop ${fmtP(top.close)} (${day(top.t)}) → laagste slot daarna ${fmtP(low.close)} (${day(low.t)}, ${pct(low.close / top.close - 1)})` + (wl.sma ? ` · toen MA ${fmtP(wl.sma)} (${pct(low.close / wl.sma - 1)}), EMA ${fmtP(wl.ema)} (${pct(low.close / wl.ema - 1)})` : ''));
+  c.lows.forEach(([iso, lbl]) => {
     const t = Date.parse(iso);
-    const w = a.reduce((b, x) => Math.abs(x.t - t) < Math.abs(b.t - t) ? x : b);
-    const lowDay = clean.filter((r) => Math.abs(r.t - t) <= 10 * DAY).reduce((m, r) => r.close < m.close ? r : m, { close: Infinity });
-    if (w.sma) lines.push(`${lbl}: low ${fmt(lowDay.close)} · MA ${fmt(w.sma)} (${pct(lowDay.close / w.sma - 1)}) · EMA ${w.ema ? fmt(w.ema) + ' (' + pct(lowDay.close / w.ema - 1) + ')' : '—'}`);
+    const near = clean.filter((r) => Math.abs(r.t - t) <= 12 * DAY);
+    if (!near.length) return;
+    const lo = near.reduce((m, r) => r.close < m.close ? r : m), w = wAt(lo.t);
+    L.push(`[${sym}] ${lbl}: low ${fmtP(lo.close)} · MA ${w.sma ? fmtP(w.sma) + ' (' + pct(lo.close / w.sma - 1) + ')' : '— (te weinig data)'} · EMA ${w.ema ? fmtP(w.ema) + ' (' + pct(lo.close / w.ema - 1) + ')' : '—'}`);
   });
-  // Laatste kruising EMA/MA
-  let cross = null;
-  for (let i = a.length - 1; i > 0; i--) { const d1 = a[i].ema - a[i].sma, d0 = a[i - 1].ema - a[i - 1].sma; if (a[i - 1].ema && d1 * d0 < 0) { cross = { t: a[i].t, up: d1 > 0 }; break; } }
-  if (cross) lines.push(`Laatste kruising: ${day(cross.t)} (EMA ${cross.up ? 'boven' : 'onder'} de MA)`);
-  lines.forEach((l) => gh('notice', l));
-  summary('### 200W EMA vs MA\n\n' + lines.map((l) => `- ${l}`).join('\n'));
-  console.log(lines.join('\n'));
+  return L;
+};
+
+const runAnalyse = async () => {
+  const want = (process.env.COIN || 'BTC').toUpperCase();
+  const list = want === 'ALL' ? Object.keys(COINS) : [want];
+  for (const sym of list) {
+    try {
+      const L = await analyseCoin(sym);
+      L.forEach((l) => gh('notice', l));
+      summary(`### ${sym}: 200W EMA vs MA\n\n` + L.map((l) => `- ${l}`).join('\n'));
+      console.log(L.join('\n'));
+    } catch (e) { gh('error', `[${sym}] ${e.message}`); }
+  }
 };
 
 const main = async () => {
