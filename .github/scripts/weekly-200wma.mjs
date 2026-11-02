@@ -198,37 +198,73 @@ const runAnalyse = async () => {
   }
 };
 
+// ---- Weekrapport: BTC (met kwartaalverwachting) + ETH en SOL, MA én EMA ----
+const loadCoinWeeks = async (sym) => {
+  const rows = sym === 'BTC'
+    ? await sources.bitstamp(8).catch(async (e) => { gh('warning', `BTC volledige historie via Bitstamp mislukt (${e.message}), terugval op kortere data`); return (await loadDaily()).rows; })
+    : await COINS[sym].load();
+  const byDay = new Map(rows.map((r) => [Math.floor(r.t / DAY), r.close]));
+  return [...byDay.entries()].map(([d, close]) => ({ t: d * DAY, close })).sort((a, b) => a.t - b.t);
+};
+
+const coinLine = (sym, a) => {
+  const last = a[a.length - 1], prev = a[a.length - 2];
+  if (!last.sma) return { text: `${sym} ${fmtP(last.close)} · nog geen 200 weken data`, events: [] };
+  const r = last.close / last.sma, re = last.close / last.ema;
+  const events = [];
+  if (prev && prev.sma && (prev.close >= prev.sma) !== (last.close >= last.sma)) events.push(`${sym} sloot ${last.close >= last.sma ? 'BOVEN' : 'ONDER'} het 200W MA`);
+  if (prev && prev.ema && (prev.close >= prev.ema) !== (last.close >= last.ema)) events.push(`${sym} sloot ${last.close >= last.ema ? 'BOVEN' : 'ONDER'} de 200W EMA`);
+  return {
+    text: `${sym} ${fmtP(last.close)} · MA ${fmtP(last.sma)} (${pct(r - 1)}) · EMA ${fmtP(last.ema)} (${pct(re - 1)})`,
+    events, r,
+  };
+};
+
 const main = async () => {
   if (process.env.MODE === 'analyse') return runAnalyse();
-  const { name, rows } = await loadDaily();
-  const c = compute(rows);
-  const { title, body } = message(c, name);
+  // BTC: zelfde berekening als voorheen (+ EMA)
+  const btcRows = await loadCoinWeeks('BTC');
+  const c = compute(btcRows);
+  const btcA = analyse(btcRows);
+  const btc = coinLine('BTC', btcA);
+  const lines = [
+    `Weekslot ${day(c.last.t)}`,
+    btc.text,
+    `BTC MA ${sign(c.wma - c.prev)} t.o.v. vorige week · ${c.qs.map((q) => `${q.label} ±${fmt(Math.round(q.value / 100) * 100)}`).join(' · ')}`,
+  ];
+  const events = [...btc.events];
+  let close = c.ratio < 1.1;
+  for (const sym of ['ETH', 'SOL']) {
+    try {
+      const a = analyse(await loadCoinWeeks(sym));
+      const l = coinLine(sym, a);
+      lines.push(l.text); events.push(...l.events);
+      if (l.r && Math.abs(l.r - 1) < 0.03) close = true;
+    } catch (e) { lines.push(`${sym}: data niet beschikbaar`); gh('warning', `${sym}: ${e.message}`); }
+  }
+  if (events.length) lines.push('🔔 ' + events.join(' · '));
+  else if (c.ratio < 1) lines.push('⚠️ BTC onder het 200WMA: historisch bodemgebied.');
+  const title = `Weekslot · BTC 200WMA ${fmt(c.wma)}`;
+  const body = lines.join('\n');
   console.log(title + '\n' + body);
-  summary(`### ${title}\n\n` + body.split('\n').map((l) => `- ${l}`).join('\n'));
+  summary(`### ${title}\n\n` + lines.map((l) => `- ${l}`).join('\n'));
   if (process.env.DRY_RUN) return;
-  // Accepteert ook een volledige link (https://ntfy.sh/naam, ntfy.sh/naam) en haalt er de naam uit
   const raw = (process.env.NTFY_TOPIC || '').trim().replace(/^["'<\s]+|["'>\s]+$/g, '');
   const topic = raw.split(/[/?#]/).filter(Boolean).pop() || '';
-  if (raw && !/^[-_A-Za-z0-9]{1,64}$/.test(topic)) {
-    gh('error', `NTFY_TOPIC is geen geldige ntfy-naam (alleen letters, cijfers, - en _, max. 64 tekens). Lengte nu: ${raw.length} tekens. Vul alleen de naam in, bv. btc-halving-abc123.`);
-    process.exitCode = 1; return;
-  }
-  if (!topic) {
-    gh('error', 'Geen NTFY_TOPIC-secret gevonden. Zet hem in Settings → Secrets and variables → Actions → New repository secret (naam NTFY_TOPIC, waarde je ntfy-onderwerp). De berekening zelf werkte: zie de samenvatting.');
-    process.exitCode = 1; return;
-  }
+  if (!topic) { gh('error', 'Geen NTFY_TOPIC-secret gevonden. Zet hem in Settings → Secrets and variables → Actions (naam NTFY_TOPIC, waarde je ntfy-onderwerp).'); process.exitCode = 1; return; }
+  if (!/^[-_A-Za-z0-9]{1,64}$/.test(topic)) { gh('error', `NTFY_TOPIC is geen geldige ntfy-naam (alleen letters, cijfers, - en _). Lengte nu: ${raw.length} tekens.`); process.exitCode = 1; return; }
   const fromUrl = /^https?:\/\//.test(raw) ? new URL(raw).origin : '';
   const server = (process.env.NTFY_SERVER || fromUrl || 'https://ntfy.sh').trim().replace(/\/+$/, '');
   const payload = {
-    topic, title, message: body, priority: c.ratio < 1.1 ? 4 : 3,
-    tags: [c.ratio < 1 ? 'rotating_light' : 'chart_with_upwards_trend', 'bitcoin'],
+    topic, title, message: body, priority: events.length || close ? 4 : 3,
+    tags: [events.length ? 'bell' : c.ratio < 1 ? 'rotating_light' : 'chart_with_upwards_trend'],
   };
   if (process.env.PAGE_URL) payload.click = process.env.PAGE_URL;
   const r = await fetch(server, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   if (!r.ok) throw new Error(`ntfy weigerde het bericht (HTTP ${r.status}): ${await r.text()}`);
   const sent = await r.json().catch(() => ({}));
   const masked = topic.length > 8 ? `${topic.slice(0, 12)}…${topic.slice(-3)}` : '***';
-  gh('notice', `Verstuurd naar ${server} · onderwerp "${masked}" (${topic.length} tekens) · id ${sent.id || '?'} · ${title}`);
+  gh('notice', `Verstuurd naar ${server} · onderwerp "${masked}" (${topic.length} tekens) · id ${sent.id || '?'}\n${title}\n${body}`);
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { gh('error', e.message || e); process.exit(1); });

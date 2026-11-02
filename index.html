@@ -194,6 +194,12 @@ html{scroll-behavior:smooth}
 .wma-v.good{color:var(--color-ok)}.wma-v.warn{color:var(--color-warn)}
 .wma-note{grid-column:1/-1;margin:0}
 @media (max-width:600px){.wma-hero{grid-template-columns:1fr}.wma-big{font-size:36px}}
+.wma-coins{grid-column:1/-1;overflow-x:auto}
+.wma-coins td{vertical-align:top}
+.wma-coins .wma-sym{font-weight:600}
+.wma-coins td.good{color:var(--color-ok)}.wma-coins td.warn{color:var(--color-warn)}
+@media (max-width:520px){.wma-coins .wma-d{display:none}.wma-coins th,.wma-coins td{padding:6px 5px}}
+.wma-pct{font-size:var(--cds-font-size-caption);opacity:.85}
 </style>
 
 <script>
@@ -268,7 +274,13 @@ window.dash = (() => {
       <div><div class="cy-lbl" id="wma-q1-lbl">Verwacht eind kwartaal</div><div class="wma-v" id="wma-q1">—</div></div>
       <div><div class="cy-lbl" id="wma-q2-lbl">Verwacht volgend kwartaal</div><div class="wma-v" id="wma-q2">—</div></div>
     </div>
-    <p class="cy-note wma-note">Gemiddelde van de laatste 200 weeksluitingen (zondag, UTC). Verwachting: als de prijs op het niveau van de laatste weeksluiting blijft. Elke maandag komt het herberekende cijfer via ntfy.</p>
+    <div class="wma-coins">
+      <table>
+        <thead><tr><th>Munt</th><th class="r">Weekslot</th><th class="r">200W MA</th><th class="r">200W EMA</th><th class="r wma-d">MA/week</th></tr></thead>
+        <tbody id="wma-coins"><tr><td colspan="5" class="cy-sub">laden…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="cy-note wma-note">Gemiddelde van de laatste 200 weeksluitingen (zondag, UTC). EMA: recente weken tellen zwaarder. Groen = prijs onder het gemiddelde (historisch bodemgebied), oranje = binnen 5%. Verwachting: als de prijs op het niveau van de laatste weeksluiting blijft. Elke maandag komen de herberekende cijfers via ntfy.</p>
   </section>
 
   <section class="cy-tiles">
@@ -1564,6 +1576,58 @@ window.hub = (() => {
   };
   const renderFuture = () => { try { renderPowerLaw(); } catch (e) { console.error(e); } try { renderGhosts(); } catch (e) { console.error(e); } try { renderLgc(); } catch (e) { console.error(e); } };
 
+  // ---- 200W MA/EMA-tabel voor BTC, ETH en SOL ----
+  const weekStats = (closes) => {
+    const N = 200, k = 2 / (N + 1);
+    if (closes.length < N) return { close: closes[closes.length - 1], n: closes.length };
+    const sma = (arr) => d3.sum(arr.slice(-N)) / N;
+    let ema = d3.sum(closes.slice(0, N)) / N, prevEma = ema;
+    for (let i = N; i < closes.length; i++) { prevEma = ema; ema = closes[i] * k + ema * (1 - k); }
+    return { close: closes[closes.length - 1], prevClose: closes[closes.length - 2], sma: sma(closes), prevSma: sma(closes.slice(0, -1)), ema, prevEma, n: closes.length };
+  };
+  const ALT = {};
+  const loadAltWeeks = async (sym) => {
+    const now = Date.now();
+    const done = (rows) => rows.filter((r) => r.t + 7 * DAY <= now).map((r) => r.close);   // alleen afgeronde weken
+    try {
+      const j = await json(`https://data-api.binance.vision/api/v3/klines?symbol=${sym}USDT&interval=1w&limit=1000`);
+      if (Array.isArray(j) && j.length) return { src: 'Binance', closes: done(j.map((k) => ({ t: +k[0], close: +k[4] }))) };
+    } catch (e) { console.warn(e); }
+    const j = await json(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${sym}USDT&interval=W&limit=1000`);
+    return { src: 'Bybit', closes: done(j.result.list.map((k) => ({ t: +k[0], close: +k[4] })).reverse()) };
+  };
+  const loadAlts = async () => {
+    for (const sym of ['ETH', 'SOL']) { try { ALT[sym] = await loadAltWeeks(sym); } catch (e) { console.warn(sym, e); ALT[sym] = { err: true }; } }
+    renderCoins();
+  };
+  const renderCoins = () => {
+    const tb = $('wma-coins'); if (!tb) return;
+    const rows = [];
+    if (S.daily) {
+      const wk = S.daily.rows.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= Date.now()).map((r) => r.close);
+      rows.push(['BTC', weekStats(wk)]);
+    }
+    ['ETH', 'SOL'].forEach((sym) => { const a = ALT[sym]; if (a && !a.err && a.closes.length) rows.push([sym, weekStats(a.closes)]); else if (a && a.err) rows.push([sym, null]); });
+    if (!rows.length) return;
+    const p = (v) => v >= 1000 ? usd(Math.round(v)) : '$' + d3.format(',.2f')(v);
+    tb.replaceChildren();
+    rows.forEach(([sym, s]) => {
+      const tr = tb.insertRow();
+      const cell = (txt, cls) => { const td = tr.insertCell(); td.textContent = txt; if (cls) td.className = cls; return td; };
+      cell(sym, 'wma-sym');
+      if (!s) { cell('niet beschikbaar', 'r cy-sub'); cell(''); cell(''); cell(''); return; }
+      cell(p(s.close), 'r');
+      if (!s.sma) { cell(`nog geen 200 weken (${s.n})`, 'r cy-sub'); cell(''); cell(''); return; }
+      const tone = (r) => r < 1 ? 'good' : r < 1.05 ? 'warn' : '';
+      const two = (val, r) => { const td = cell('', 'r ' + tone(r)); const a = document.createElement('div'); a.textContent = p(val); const b = document.createElement('div'); b.className = 'wma-pct'; b.textContent = pct(r - 1); td.append(a, b); };
+      two(s.sma, s.close / s.sma);
+      two(s.ema, s.close / s.ema);
+      const dlt = s.sma - s.prevSma;
+      const ad = Math.abs(dlt);
+      cell((dlt >= 0 ? '+' : '−') + (ad >= 100 ? usd(Math.round(ad)) : '$' + d3.format(',.2f')(ad)), 'r wma-d');
+    });
+  };
+
   // ---- 200WMA-kaart bovenaan (zelfde berekening als het wekelijkse ntfy-rapport) ----
   const renderWma = () => {
     if (!S.daily) return;
@@ -1590,18 +1654,18 @@ window.hub = (() => {
     setText('wma-q2-lbl', qs[1].label); setText('wma-q2', '±' + usd(Math.round(qs[1].value / 100) * 100));
   };
 
-  const renderAll = () => { renderWma(); renderIndicators(); renderRainbow(); renderFuture(); renderFng(); checkAlerts(); };
+  const renderAll = () => { renderWma(); renderCoins(); renderIndicators(); renderRainbow(); renderFuture(); renderFng(); checkAlerts(); };
 
   // start
   initAlerts();
   window.addEventListener('btcprice', () => { renderWma(); renderIndicators(); renderRainbow(); checkAlerts(); });
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); }, 150); });
-  loadDaily(); loadFng(); loadMem();
-  setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000);
+  loadDaily(); loadFng(); loadMem(); loadAlts();
+  setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000); setInterval(loadAlts, 60 * 60000);
   let lastRefresh = Date.now();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden || Date.now() - lastRefresh < 5 * 60000) return;
-    lastRefresh = Date.now(); loadDaily(); loadFng(); loadMem();
+    lastRefresh = Date.now(); loadDaily(); loadFng(); loadMem(); loadAlts();
   });
   return { state: S };
 })();
