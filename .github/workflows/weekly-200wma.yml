@@ -11,7 +11,7 @@ on:
         required: false
         default: report
         type: choice
-        options: [report, analyse]
+        options: [report, analyse, beta]
       coin:
         description: 'Munt voor de analyse'
         required: false

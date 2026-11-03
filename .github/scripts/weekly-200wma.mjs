@@ -220,8 +220,61 @@ const coinLine = (sym, a) => {
   };
 };
 
+// ---- Bèta: hoe sterk bewegen ETH en SOL mee met BTC, en welke prijzen horen bij BTC op het 200WMA ----
+const runBeta = async () => {
+  const series = {};
+  for (const sym of ['BTC', 'ETH', 'SOL']) series[sym] = await loadCoinWeeks(sym);
+  const dmap = (rows) => new Map(rows.map((r) => [r.t, r.close]));
+  const M = { BTC: dmap(series.BTC), ETH: dmap(series.ETH), SOL: dmap(series.SOL) };
+  // gemeenschappelijke zondagsluitingen
+  const now = Date.now();
+  const sundays = series.BTC.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= now && M.ETH.has(r.t) && M.SOL.has(r.t)).map((r) => r.t);
+  const ret = (sym, i) => Math.log(M[sym].get(sundays[i]) / M[sym].get(sundays[i - 1]));
+  const stats = (sym, weeks, downOnly) => {
+    const xs = [], ys = [];
+    for (let i = sundays.length - weeks; i < sundays.length; i++) {
+      const x = ret('BTC', i), y = ret(sym, i);
+      if (downOnly && x >= 0) continue;
+      xs.push(x); ys.push(y);
+    }
+    const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+    let sxy = 0, sxx = 0, syy = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; syy += (ys[i] - my) ** 2; });
+    return { beta: sxy / sxx, corr: sxy / Math.sqrt(sxx * syy), n: xs.length };
+  };
+  // laatste dagslot als "nu"
+  const lastOf = (sym) => series[sym][series[sym].length - 1];
+  const P = { BTC: lastOf('BTC').close, ETH: lastOf('ETH').close, SOL: lastOf('SOL').close };
+  const btcA = analyse(series.BTC), wl = btcA[btcA.length - 1];
+  const c = compute(series.BTC);
+  const targets = [
+    ['200WMA nu', wl.sma], ['200W EMA nu', wl.ema], [c.qs[0].label.replace('eind', '200WMA eind'), c.qs[0].value],
+    ['10% onder 200WMA', wl.sma * 0.9], ['juni-low 2026', 58526],
+  ];
+  const L = [`Nu (laatste dagslot ${day(lastOf('BTC').t)}): BTC ${fmt(P.BTC)} · ETH ${fmtP(P.ETH)} · SOL ${fmtP(P.SOL)} · ETH/BTC ${(P.ETH / P.BTC).toFixed(5)} · SOL/BTC ${(P.SOL / P.BTC * 1000).toFixed(3)}‰`];
+  const B = {};
+  for (const sym of ['ETH', 'SOL']) {
+    const s52 = stats(sym, 52), s104 = stats(sym, 104), d104 = stats(sym, 104, true);
+    B[sym] = { all: s52.beta, down: d104.n >= 8 && isFinite(d104.beta) ? d104.beta : s52.beta };
+    L.push(`${sym} bèta 52 wk ${s52.beta.toFixed(2)} (corr ${s52.corr.toFixed(2)}) · 104 wk ${s104.beta.toFixed(2)} · bij dalende BTC-weken (104 wk) ${d104.beta.toFixed(2)} (n=${d104.n})`);
+  }
+  for (const [lbl, tgt] of targets) {
+    const dBtc = Math.log(tgt / P.BTC);
+    const parts = ['ETH', 'SOL'].map((sym) => {
+      const flat = P[sym] * (tgt / P.BTC);
+      const b1 = P[sym] * Math.exp(B[sym].all * dBtc), b2 = P[sym] * Math.exp(B[sym].down * dBtc);
+      const lo = Math.min(b1, b2, flat), hi = Math.max(b1, b2, flat);
+      return `${sym} ${fmtP(lo)}–${fmtP(hi)} (gelijke ratio ${fmtP(flat)})`;
+    });
+    L.push(`BTC → ${fmt(tgt)} (${lbl}, ${pct(tgt / P.BTC - 1)}): ${parts.join(' · ')}`);
+  }
+  gh('notice', L.join('\n'));
+  summary('### Bèta ETH/SOL t.o.v. BTC\n\n' + L.map((l) => `- ${l}`).join('\n'));
+  console.log(L.join('\n'));
+};
+
 const main = async () => {
   if (process.env.MODE === 'analyse') return runAnalyse();
+  if (process.env.MODE === 'beta') return runBeta();
   // BTC: zelfde berekening als voorheen (+ EMA)
   const btcRows = await loadCoinWeeks('BTC');
   const c = compute(btcRows);
