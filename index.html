@@ -224,7 +224,9 @@ html{scroll-behavior:smooth}
 .bz-now{stroke:var(--color-fg);stroke-width:1.5}
 .bz-low{stroke:var(--color-ok);stroke-width:1.5;stroke-dasharray:4 3}
 #bz-chart{min-height:340px}
-#bz-hr-chart,#bz-liq-chart,#bz-mvrv-chart{min-height:240px}
+#bz-hr-chart,#bz-liq-chart,#bz-mvrv-chart,#bz-puell-chart{min-height:240px}
+.bz-pu-low{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
+.bz-pu-high{fill:color-mix(in srgb,var(--color-bad) 10%,transparent)}
 #bz-fg-chart{min-height:260px}
 .cy tr.bz-now-row td{font-weight:600;background:color-mix(in srgb,var(--color-fg) 5%,transparent)}
 .bz-table td{vertical-align:top}
@@ -405,6 +407,7 @@ window.dash = (() => {
       <div><div class="cy-lbl">Hashprice</div><div class="cy-num" id="bz-hp">—</div><div class="cy-sub" id="bz-hp-sub">USD per PH/s per dag</div></div>
       <div><div class="cy-lbl">Hashrate (7 dagen)</div><div class="cy-num" id="bz-hr">—</div><div class="cy-sub" id="bz-hr-sub">—</div></div>
       <div><div class="cy-lbl">Moeilijkheid</div><div class="cy-num" id="bz-diff">—</div><div class="cy-sub" id="bz-diff-sub">—</div></div>
+      <div><div class="cy-lbl">Puell Multiple (7 dagen)</div><div class="cy-num" id="bz-puell">—</div><div class="cy-sub" id="bz-puell-sub">laden…</div></div>
     </div>
     <div class="dca-form">
       <label>Gemiddelde efficiëntie (J/TH) <input id="bz-jth" type="number" min="5" max="60" step="1" inputmode="decimal"></label>
@@ -416,6 +419,14 @@ window.dash = (() => {
       <span><i class="sw bear"></i>Miner-kapitulatie (30D onder 60D)</span>
     </div>
     <div class="cy-chart" id="bz-hr-chart"></div>
+    <h3 class="fut-h">Puell Multiple</h3>
+    <p class="cy-note">Wat miners vandaag verdienen aan nieuwe BTC (in dollar) ÷ hun gemiddelde van het afgelopen jaar. Onder 0,6 verdienen ze nog geen twee derde van normaal: grote druk om te verkopen of uit te schakelen. Daar lagen de bodems van 2015, 2018, 2020, 2022 en juni 2026 (7-daags: 0,34–0,57). Boven 4 verdienen ze uitzonderlijk veel: topzone. Let op: na een halving zakt de Puell een jaar lang mechanisch, omdat de beloning halveert (Coin Metrics, 7-daags gemiddelde).</p>
+    <div class="cy-legend">
+      <span><i class="sw bull"></i>Bodemzone (onder 0,6)</span>
+      <span><i class="sw bear"></i>Topzone (boven 4)</span>
+      <span><i class="sw halving"></i>Halving</span>
+    </div>
+    <div class="cy-chart" id="bz-puell-chart"></div>
   </section>
   <section class="cy-card" id="liquidaties">
     <h2>Liquidaties (geschatte kaart)</h2>
@@ -658,7 +669,7 @@ window.dash = (() => {
     </details>
     <details class="al-tg">
       <summary>Bodemsignalen bij elke verandering (ook met de app dicht)</summary>
-      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de zeven kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen en 10+ dagen extreme angst in een maand. Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
+      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de acht kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, Puell Multiple, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen en 10+ dagen extreme angst in een maand. Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
     </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>
@@ -1974,8 +1985,12 @@ window.bodem = (() => {
 
   const loadCm = async () => {
     try {
-      const j = await json('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur,HashRate&frequency=1d&page_size=10000&start_time=2013-01-01');
-      D.cm = j.data.map((d) => ({ t: Date.parse(d.time), p: +d.PriceUSD, mvrv: +d.CapMVRVCur, eh: +d.HashRate / 1e6 })).filter((d) => d.p > 0 && d.mvrv > 0);
+      const j = await json('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur,HashRate,IssTotUSD&frequency=1d&page_size=10000&start_time=2012-01-01');
+      D.cm = j.data.map((d) => ({ t: Date.parse(d.time), p: +d.PriceUSD, mvrv: +d.CapMVRVCur, eh: +d.HashRate / 1e6, iss: +d.IssTotUSD })).filter((d) => d.p > 0 && d.mvrv > 0);
+      // Puell Multiple = uitgifte in USD vandaag ÷ 365-daags gemiddelde daarvan; pu7 = 7-daags gemiddelde (minder ruis door het aantal blokken per dag)
+      let sum = 0;
+      D.cm.forEach((d, i) => { sum += d.iss || 0; if (i >= 365) sum -= D.cm[i - 365].iss || 0; d.pu = i >= 364 && sum > 0 ? d.iss / (sum / 365) : null; });
+      D.cm.forEach((d, i) => { const w = D.cm.slice(Math.max(0, i - 6), i + 1).filter((q) => q.pu != null); d.pu7 = d.pu != null && w.length ? d3.mean(w, (q) => q.pu) : null; });
     } catch (e) { console.warn(e); }
     render();
   };
@@ -2020,14 +2035,16 @@ window.bodem = (() => {
     return { rp, mvrv: P / rp, t: last.t };
   };
   // MVRV op elke cyclusbodem (laagste MVRV binnen 45 dagen rond de bodemdatum)
-  const bottomMvrv = () => {
+  const bottomOf = (key) => {
     const ev = cy.rows(); if (!D.cm || !ev) return [];
     return ev.filter((e) => e.kind === 'bodem' && e.cycle >= 1).map((e) => {
-      const w = D.cm.filter((d) => Math.abs(d.t - e.t) < 45 * DAY);
-      const m = d3.least(w, (d) => d.mvrv);
-      return m ? { y: e.t.getUTCFullYear(), v: m.mvrv } : null;
+      const w = D.cm.filter((d) => Math.abs(d.t - e.t) < 45 * DAY && d[key] != null);
+      const m = d3.least(w, (d) => d[key]);
+      return m ? { y: e.t.getUTCFullYear(), v: m[key] } : null;
     }).filter(Boolean);
   };
+  const bottomMvrv = () => bottomOf('mvrv');
+  const puell = () => { if (!D.cm) return null; const l = [...D.cm].reverse().find((d) => d.pu7 != null); return l ? { v: l.pu7, t: l.t } : null; };
   const hrSeries = () => D.hr && D.hr.length > 90 ? D.hr : (D.cm ? D.cm.filter((d) => d.t > Date.now() - 400 * DAY && d.eh > 0).map((d) => ({ t: d.t, eh: d.eh })) : null);
   const ribbons = () => {
     const s = hrSeries(); if (!s || s.length < 70) return null;
@@ -2234,6 +2251,7 @@ window.bodem = (() => {
       { name: 'Prijs onder miner-kostprijs', ok: P && mc ? P < mc.cost : null, val: P && mc ? pct(P / mc.cost - 1) : '—', sub: mc ? `Kostprijs ${usd(Math.round(mc.cost))}` : 'laden…' },
       { name: 'Funding negatief (7 d)', ok: f7 != null ? f7 < 0 : null, val: f7 != null ? d3.format('+.1%')(f7) : '—', sub: f7 == null ? 'laden…' : f7 < 0 ? 'Shorts betalen longs: hefboom gespoeld' : 'Longs betalen shorts' },
       { name: 'Extreme angst (F&G < 25)', ok: fng ? fng.v < 25 : null, val: fng ? String(fng.v) : '—', sub: fng ? nlF(fng.cls) : 'laden…' },
+      (() => { const pu = puell(); return { name: 'Puell Multiple onder 0,6', ok: pu ? pu.v < 0.6 : null, val: pu ? d3.format('.2f')(pu.v) : '—', sub: pu ? (pu.v < 0.6 ? 'Miner-opbrengst historisch laag' : 'Bodems: 0,34–0,57') : 'laden…' }; })(),
       { name: 'Moeilijkheid daalt', ok: df ? (df.previousRetarget < 0 || (df.progressPercent > 50 && df.difficultyChange < 0)) : null,
         val: df ? d3.format('+.1f')(df.progressPercent > 50 ? df.difficultyChange : df.previousRetarget) + '%' : '—',
         sub: df ? `Vorige ${d3.format('+.1f')(df.previousRetarget)}%, volgende ±${d3.format('+.1f')(df.difficultyChange)}%` : 'laden…' },
@@ -2324,6 +2342,32 @@ window.bodem = (() => {
     svg.append('line').attr('class', 'bz-now').attr('x1', x(lq.P)).attr('x2', x(lq.P)).attr('y1', mt - 6).attr('y2', H - mb);
     svg.append('text').attr('class', 'cy-lab').attr('x', x(lq.P)).attr('y', mt - 8).attr('text-anchor', 'middle').text(`nu ${kS(lq.P)}`);
     if (lq.cluster) svg.append('text').attr('class', 'cy-lab').attr('x', x((lq.cluster.lo + lq.cluster.hi) / 2)).attr('y', mt + 10).attr('text-anchor', 'middle').text('cluster');
+  };
+
+  const renderPuell = () => {
+    const pu = puell(); if (!pu) { setText('bz-puell-sub', D.cm === null ? 'laden…' : 'niet bereikbaar'); return; }
+    setText('bz-puell', d3.format('.2f')(pu.v));
+    const el0 = $('bz-puell'); if (el0) el0.style.color = pu.v < 0.6 ? 'var(--color-ok)' : pu.v > 4 ? 'var(--color-bad)' : '';
+    const bp = bottomOf('pu7');
+    setText('bz-puell-sub', (pu.v < 0.6 ? 'Bodemzone' : pu.v > 4 ? 'Topzone' : pu.v < 1 ? 'Onder normaal (bodemzone onder 0,6)' : 'Normaal tot verhoogd') + (bp.length ? ` · bodems: ${bp.map((b) => `${String(b.y).slice(2)}: ${d3.format('.2f')(b.v)}`).join(', ')}` : ''));
+    const el = $('bz-puell-chart'); if (!el || !hub.frame) return;
+    const rows = D.cm.filter((d) => d.pu7 != null && d.t >= Date.UTC(2014, 0, 1));
+    if (rows.length < 10) return;
+    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 220 : 260);
+    const ml = cy.measure(svg, '0.3') + 12, mr = 10, mt = 10, mb = 26;
+    const x = d3.scaleUtc([new Date(rows[0].t), new Date(rows[rows.length - 1].t)], [ml, W - mr]);
+    const y = d3.scaleLog([0.2, Math.max(8, d3.max(rows, (r) => r.pu7) * 1.1)], [H - mb, mt]).clamp(true);
+    svg.append('rect').attr('class', 'bz-pu-low').attr('x', ml).attr('width', W - mr - ml).attr('y', y(0.6)).attr('height', y(0.2) - y(0.6));
+    svg.append('rect').attr('class', 'bz-pu-high').attr('x', ml).attr('width', W - mr - ml).attr('y', y(y.domain()[1])).attr('height', y(4) - y(y.domain()[1]));
+    const yt = [0.3, 0.6, 1, 2, 4, 8].filter((v) => v <= y.domain()[1]);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', (d) => d === 1 ? 'cy-ref' : 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
+    hub.timeAxis(svg, x, W, H);
+    const hv = (cy.rows() || []).filter((e) => e.kind === 'halving' && !e.projectie && e.t >= rows[0].t);
+    const hg = svg.append('g').selectAll('g').data(hv).join('g').attr('class', 'cy-hv');
+    hg.append('line').attr('x1', (e) => x(e.t)).attr('x2', (e) => x(e.t)).attr('y1', mt).attr('y2', H - mb);
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.75).attr('stroke-width', 1.2).attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.pu7))(rows));
+    hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `Puell ${d3.format('.2f')(r.pu7)}`, `Prijs ${usd(Math.round(r.p))}`]);
   };
 
   const renderMvrv = () => {
@@ -2482,6 +2526,7 @@ window.bodem = (() => {
       try { renderMiners(); } catch (e) { console.error(e); }
       try { renderDeriv(); } catch (e) { console.error(e); }
       try { renderMvrv(); } catch (e) { console.error(e); }
+      try { renderPuell(); } catch (e) { console.error(e); }
       try { renderFngDips(); } catch (e) { console.error(e); }
     } finally { busy = false; }
   };

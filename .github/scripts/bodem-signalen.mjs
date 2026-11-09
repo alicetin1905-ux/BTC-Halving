@@ -48,7 +48,7 @@ const loadAll = async () => {
   const [daily, ticker, cm, hr, fees, diff, funding, fng, hlCtx] = await Promise.all([
     tryLoad('Bitstamp dagkoersen', loadDaily),
     tryLoad('Bitstamp koers', async () => +(await getJson('https://www.bitstamp.net/api/v2/ticker/btcusd/')).last),
-    tryLoad('Coin Metrics (MVRV)', async () => (await getJson('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur&frequency=1d&page_size=10&paging_from=end')).data.map((d) => ({ p: +d.PriceUSD, mvrv: +d.CapMVRVCur })).filter((d) => d.p > 0 && d.mvrv > 0)),
+    tryLoad('Coin Metrics (MVRV, uitgifte)', async () => (await getJson('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur,IssTotUSD&frequency=1d&page_size=400&paging_from=end')).data.map((d) => ({ p: +d.PriceUSD, mvrv: +d.CapMVRVCur, iss: +d.IssTotUSD })).filter((d) => d.p > 0 && d.mvrv > 0)),
     tryLoad('mempool.space hashrate', async () => (await getJson('https://mempool.space/api/v1/mining/hashrate/1y')).hashrates.map((h) => h.avgHashrate / 1e18).filter((v) => v > 0)),
     tryLoad('mempool.space fees', async () => +(await getJson('https://mempool.space/api/v1/mining/reward-stats/144')).totalFee / 1e8),
     tryLoad('mempool.space moeilijkheid', () => getJson('https://mempool.space/api/v1/difficulty-adjustment')),
@@ -79,6 +79,13 @@ export const signals = (d, cfg = {}) => {
   if (d.cm && d.cm.length && P) {
     const l = d.cm[d.cm.length - 1], rp = l.p / l.mvrv, v = P / rp;
     out.push({ id: 'mvrv', name: 'MVRV onder 1', v, on: v < 1, off: v > 1.02, txt: `MVRV ${num(v)} · realized price ${fmt(rp)}` });
+    // Puell Multiple: uitgifte in USD ÷ 365-daags gemiddelde, als 7-daags gemiddelde (zelfde als het dashboard)
+    const iss = d.cm.map((q) => q.iss).filter((q) => q > 0);
+    if (iss.length >= 371) {
+      const pu = (i) => iss[i] / mean(iss.slice(i - 364, i + 1));
+      const pv = mean([0, 1, 2, 3, 4, 5, 6].map((k) => pu(iss.length - 1 - k)));
+      out.push({ id: 'puell', name: 'Puell Multiple onder 0,6', v: pv, on: pv < 0.6, off: pv > 0.62, txt: `Puell ${num(pv)} (bodems 0,34–0,57)` });
+    }
   }
   if (d.hr && d.hr.length >= 60) {
     const a30 = mean(d.hr.slice(-30)), a60 = mean(d.hr.slice(-60)), v = a30 / a60 - 1;
@@ -107,8 +114,8 @@ export const signals = (d, cfg = {}) => {
   }
   return out;
 };
-// De zeven kapitulatiesignalen van het dashboard tellen mee in de score (de twee dip-signalen niet)
-const SCORE_IDS = ['wma', 'mvrv', 'ribbon', 'miner', 'funding', 'fng', 'diff'];
+// De acht kapitulatiesignalen van het dashboard tellen mee in de score (de twee dip-signalen niet)
+const SCORE_IDS = ['wma', 'mvrv', 'ribbon', 'miner', 'puell', 'funding', 'fng', 'diff'];
 
 // Nieuwe toestand met hysterese; onbekende signalen (bron plat) behouden hun vorige stand
 export const step = (prev, sigs) => {
