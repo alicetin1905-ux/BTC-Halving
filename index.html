@@ -183,6 +183,14 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .cy-nav a{flex:0 0 auto;padding:6px 12px;border-radius:999px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);text-decoration:none;border:1px solid var(--color-border-line);background:var(--color-panel);white-space:nowrap}
 .cy-nav a.on{color:var(--color-bg);background:var(--color-fg);border-color:var(--color-fg)}
 .cy section[id],.cy header[id]{scroll-margin-top:64px}
+.cy-tab{display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
+.cy-tab[hidden]{display:none}
+.bz-more{margin-top:var(--cds-gap-md);border-top:1px solid var(--color-border-line);padding-top:var(--cds-gap-sm)}
+.bz-more>summary{cursor:pointer;font-size:var(--cds-font-size-body);color:var(--color-fg-muted);padding:4px 0}
+.bz-more>summary:hover{color:var(--color-fg)}
+.bz-more[open]>summary{margin-bottom:var(--cds-gap-sm)}
+.ov-tiles .cy-num{font-size:24px}
+.bz-score{font-weight:400;color:var(--color-fg-muted);margin-left:6px}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
 .al-anchor{margin:var(--cds-gap-md) 0;padding-top:var(--cds-gap-sm);border-top:1px solid var(--color-border-line)}
@@ -269,30 +277,33 @@ window.dash = (() => {
 
 
 <div class="cy">
-  <nav class="cy-nav" aria-label="Secties">
-    <a href="#overzicht">Overzicht</a>
-    <a href="#bodem">Bodem 2026</a>
-    <a href="#wma">200WMA</a>
-    <a href="#koers">Koers</a>
-    <a href="#indicatoren">Indicatoren</a>
-    <a href="#rainbow">Rainbow</a>
-    <a href="#toekomst">Toekomst</a>
-    <a href="#fng">Sentiment</a>
-    <a href="#overlay">Cycli</a>
-    <a href="#countdown">Halving</a>
-    <a href="#vergelijk">2022 vs nu</a>
-    <a href="#klok">Klok</a>
-    <a href="#kwartalen">Kwartalen</a>
-    <a href="#alerts">Alerts</a>
+  <nav class="cy-nav cy-tabs" aria-label="Tabbladen" role="tablist">
+    <a href="#t-overzicht" data-tab="overzicht" role="tab">Overzicht</a>
+    <a href="#t-indicatoren" data-tab="indicatoren" role="tab">Indicatoren</a>
+    <a href="#t-cyclus" data-tab="cyclus" role="tab">Cyclus</a>
+    <a href="#t-modellen" data-tab="modellen" role="tab">Modellen</a>
+    <a href="#t-alerts" data-tab="alerts" role="tab">Alerts</a>
   </nav>
+  <div class="cy-tab" data-tab="overzicht" id="t-overzicht">
   <header class="cy-head" id="overzicht">
     <h1>BTC 4-jarige cyclus</h1>
     <p>Sinds de eerste halving viel elke cyclustop in Q4, gemiddeld <b data-draw="v" data-source="summary" data-row="0" data-field="gem_halving_top" data-fmt="int">—</b> maanden na de halving, en volgde de bodem ongeveer <b data-draw="v" data-source="summary" data-row="0" data-field="gem_top_bodem" data-fmt="int">—</b> maanden later. Deze cyclus zakte BTC <b data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</b> vanaf de top: de kleinste daling ooit.</p>
   </header>
-
+  <section class="cy-tiles ov-tiles">
+    <div class="cy-card">
+      <div class="cy-lbl">Prijs nu</div>
+      <div class="cy-num" data-draw="v" data-source="events" data-where="id=now" data-field="price" data-fmt="usd">—</div>
+      <div class="cy-sub" id="live-note">Laatst bekende koers</div>
+    </div>
+    <div class="cy-card"><div class="cy-lbl">Cyclusbodem tot nu</div><div class="cy-num" data-draw="v" data-source="events" data-where="id=low4" data-field="price" data-fmt="usd">—</div><div class="cy-sub"><b data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</b> vanaf de top van <b data-draw="v" data-source="events" data-where="id=top4" data-field="price" data-fmt="usd">—</b></div></div>
+    <div class="cy-card"><div class="cy-lbl">Kapitulatiescore</div><div class="cy-num" id="ov-score">—</div><div class="cy-sub" id="ov-score-sub">laden…</div></div>
+    <div class="cy-card"><div class="cy-lbl">Fear &amp; Greed</div><div class="cy-num" id="ov-fng">—</div><div class="cy-sub" id="ov-fng-sub">laden…</div></div>
+    <div class="cy-card"><div class="cy-lbl">t.o.v. 200-weeks gem.</div><div class="cy-num" id="ov-wma">—</div><div class="cy-sub" id="ov-wma-sub">laden…</div></div>
+    <div class="cy-card"><div class="cy-lbl">Dagen tot halving 5</div><div class="cy-num" data-draw="cd-days" data-source="events">—</div><div class="cy-sub">Schatting op basis van bloktijd</div></div>
+  </section>
   <section class="cy-card bz" id="bodem">
-    <h2>Bodemzone 2026: alle signalen samen</h2>
-    <p class="cy-note">Acht modellen geven elk een prijszone voor de bodem (of de volgende koopzone) van deze cyclus. Waar veel zones overlappen, ligt de kernzone. Alles wordt live berekend; vink modellen uit om te zien hoe de zone verschuift. Een kansverdeling uit historische patronen, geen voorspelling.</p>
+    <h2>Bodemzone 2026</h2>
+    <p class="cy-note">Acht modellen geven elk een prijszone voor de bodem (of de volgende koopzone). Waar ze overlappen, ligt de kernzone. Een kansverdeling uit historische patronen, geen voorspelling.</p>
     <div class="bz-hero">
       <div>
         <div class="cy-lbl">Kernzone (50% van het gewicht)</div>
@@ -314,84 +325,25 @@ window.dash = (() => {
       <span><i class="sw" style="background:var(--color-ok)"></i>Cyclusbodem</span>
     </div>
     <div class="cy-chart" id="bz-chart"></div>
-    <div class="cy-tw">
-      <table class="bz-table">
-        <thead><tr><th></th><th>Model</th><th class="r">Zone</th><th class="r">Gewicht</th></tr></thead>
-        <tbody id="bz-models"><tr><td colspan="4" class="cy-sub">laden…</td></tr></tbody>
-      </table>
-    </div>
-
-    <h3 class="fut-h">Kapitulatiesignalen nu</h3>
-    <p class="cy-note">Bij de bodems van 2015, 2018 en 2022 stonden de meeste van deze signalen tegelijk aan. Hoe meer groen, hoe meer de markt op een echte capitulatie lijkt. Gaat een signaal aan of uit, dan kan je een ntfy-melding krijgen, ook met de app dicht (zie <a href="#alerts">Alerts</a>).</p>
+    <details class="bz-more">
+      <summary>Waarom deze zone? De acht modellen (aan/uit te zetten)</summary>
+      <div class="cy-tw">
+        <table class="bz-table">
+          <thead><tr><th></th><th>Model</th><th class="r">Zone</th><th class="r">Gewicht</th></tr></thead>
+          <tbody id="bz-models"><tr><td colspan="4" class="cy-sub">laden…</td></tr></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+  <section class="cy-card" id="signalen">
+    <h2>Kapitulatiesignalen nu <span class="bz-score" id="bz-sig-score"></span></h2>
+    <p class="cy-note">Bij de bodems van 2015, 2018 en 2022 stonden de meeste tegelijk aan (groen). Elke verandering kan als ntfy-melding binnenkomen, zie <a href="#alerts">Alerts</a>. Details per signaal onder <a href="#t-indicatoren">Indicatoren</a>.</p>
     <div class="ind-tiles" id="bz-sig"></div>
 
-    <h3 class="fut-h">Fear &amp; Greed: nu vs eerdere dips</h3>
-    <p class="cy-note">Elke dip sinds februari 2018 (begin van de index) waarbij BTC het laagste punt in ±45 dagen bereikte, minstens 20% onder de top van de 120 dagen ervoor. Per dip: de laagste Fear &amp; Greed-score rond die dag (±7 dagen), het gemiddelde en het aantal dagen extreme angst (onder 25) in de 30 dagen ervoor, en of het een bodem werd (geen lagere koers in de 180 dagen erna).</p>
-    <div class="cy-tiles fut-tiles">
-      <div><div class="cy-lbl">Fear &amp; Greed nu</div><div class="cy-num" id="bz-fg-now">—</div><div class="cy-sub" id="bz-fg-now-sub">laden…</div></div>
-      <div><div class="cy-lbl">Laagste 7 dagen · gem. 30 dagen</div><div class="cy-num" id="bz-fg-7">—</div><div class="cy-sub" id="bz-fg-7-sub">—</div></div>
-      <div><div class="cy-lbl">Dagen extreme angst (30 d)</div><div class="cy-num" id="bz-fg-xf">—</div><div class="cy-sub" id="bz-fg-xf-sub">—</div></div>
-      <div><div class="cy-lbl">Bij dips die bodem werden</div><div class="cy-num" id="bz-fg-held">—</div><div class="cy-sub" id="bz-fg-held-sub">—</div></div>
-    </div>
-    <p class="cy-sub" id="bz-fg-take"></p>
-    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
-      <span><i class="sw" style="background:var(--color-ok)"></i>Werd bodem</span>
-      <span><i class="sw" style="background:var(--color-bad)"></i>Daarna nog lager</span>
-      <span><i class="sw ring bodem"></i>Houdt tot nu (nog geen 180 dagen)</span>
-      <span><i class="sw" style="background:var(--color-fg)"></i>Nu</span>
-      <span><i class="sw bear"></i>Extreme angst</span>
-    </div>
-    <div class="cy-chart" id="bz-fg-chart"></div>
-    <div class="cy-tw">
-      <table>
-        <thead><tr><th>Dip</th><th class="r">Prijs</th><th class="r">Daling</th><th class="r">F&amp;G laagst</th><th class="r">Gem. 30 d</th><th class="r">Dagen &lt;25</th><th class="r">+90 dagen</th><th>Bodem?</th></tr></thead>
-        <tbody id="bz-fg-dips"><tr><td colspan="8" class="cy-sub">laden…</td></tr></tbody>
-      </table>
-    </div>
-
-    <h3 class="fut-h">Miner stress</h3>
-    <p class="cy-note">Miners verkopen hun BTC om stroom te betalen. Zakt de prijs onder hun kostprijs, dan schakelen zwakke miners uit en verkopen ze reserves: de hashrate daalt (hash ribbons: 30-daags gemiddelde onder het 60-daagse). Dat viel samen met de bodems van 2018, 2020 en 2022. Kostprijs = stroomverbruik van het netwerk ÷ BTC die per dag gedolven wordt.</p>
-    <div class="cy-tiles fut-tiles">
-      <div><div class="cy-lbl">Stroomkost per BTC</div><div class="cy-num" id="bz-cost">—</div><div class="cy-sub" id="bz-cost-sub">laden…</div></div>
-      <div><div class="cy-lbl">Hashprice</div><div class="cy-num" id="bz-hp">—</div><div class="cy-sub" id="bz-hp-sub">USD per PH/s per dag</div></div>
-      <div><div class="cy-lbl">Hashrate (7 dagen)</div><div class="cy-num" id="bz-hr">—</div><div class="cy-sub" id="bz-hr-sub">—</div></div>
-      <div><div class="cy-lbl">Moeilijkheid</div><div class="cy-num" id="bz-diff">—</div><div class="cy-sub" id="bz-diff-sub">—</div></div>
-    </div>
-    <div class="dca-form">
-      <label>Gemiddelde efficiëntie (J/TH) <input id="bz-jth" type="number" min="5" max="60" step="1" inputmode="decimal"></label>
-      <label>Stroomprijs ($/kWh) <input id="bz-kwh" type="number" min="0.01" max="0.2" step="0.005" inputmode="decimal"></label>
-    </div>
-    <div class="cy-legend">
-      <span><i class="sw" style="background:var(--color-warn)"></i>Hashrate 30 dagen</span>
-      <span><i class="sw" style="background:#5b8def"></i>Hashrate 60 dagen</span>
-      <span><i class="sw bear"></i>Miner-kapitulatie (30D onder 60D)</span>
-    </div>
-    <div class="cy-chart" id="bz-hr-chart"></div>
-
-    <h3 class="fut-h">Liquidaties (geschatte kaart)</h3>
-    <p class="cy-note">Hefboomposities worden gedwongen gesloten als de prijs hun liquidatieprijs raakt. Grote clusters long-liquidaties onder de prijs werken als magneet: een daling erheen versnelt door gedwongen verkopen, en daarna is de markt "schoon". Model op basis van 4-uurscandles van Hyperliquid (90 dagen): elke candle opent posities met 3× tot 100× hefboom; posities waarvan de liquidatieprijs al geraakt is, vallen weg. De cluster wordt gezocht vanaf 5% onder de prijs (de clusters vlak onder de prijs zijn 50–100×-posities die bij elke schommeling verdwijnen). Een schatting, geen echte orderdata.</p>
-    <div class="cy-tiles fut-tiles">
-      <div><div class="cy-lbl">Grootste long-cluster</div><div class="cy-num" id="bz-lq">—</div><div class="cy-sub" id="bz-lq-sub">laden…</div></div>
-      <div><div class="cy-lbl">Funding (7 dagen, per jaar)</div><div class="cy-num" id="bz-fund">—</div><div class="cy-sub" id="bz-fund-sub">—</div></div>
-      <div><div class="cy-lbl">Open interest (Hyperliquid)</div><div class="cy-num" id="bz-oi">—</div><div class="cy-sub" id="bz-oi-sub">—</div></div>
-    </div>
-    <div class="cy-legend">
-      <span><i class="sw" style="background:var(--color-bad)"></i>Long-liquidaties (gedwongen verkopen)</span>
-      <span><i class="sw" style="background:var(--color-ok)"></i>Short-liquidaties (gedwongen aankopen)</span>
-    </div>
-    <div class="cy-chart" id="bz-liq-chart"></div>
-
-    <h3 class="fut-h">Realized price &amp; MVRV</h3>
-    <p class="cy-note">De realized price is de gemiddelde prijs waartegen alle BTC voor het laatst verplaatst zijn: de kostprijs van de hele markt. MVRV = prijs ÷ realized price. Onder 1 staat de gemiddelde houder op verlies; daar vielen de bodems van 2015, 2018 en 2022 (Coin Metrics).</p>
-    <div class="cy-tiles fut-tiles">
-      <div><div class="cy-lbl">Realized price</div><div class="cy-num" id="bz-rp">—</div><div class="cy-sub" id="bz-rp-sub">laden…</div></div>
-      <div><div class="cy-lbl">MVRV nu</div><div class="cy-num" id="bz-mvrv">—</div><div class="cy-sub">Bodemzone onder 1</div></div>
-      <div><div class="cy-lbl">MVRV bij eerdere bodems</div><div class="cy-sub fut-big" id="bz-mvrv-hist">—</div></div>
-    </div>
-    <div class="cy-chart" id="bz-mvrv-chart"></div>
-    <span data-draw="bodem" hidden></span>
   </section>
-
+  <span data-draw="bodem" hidden></span>
+  </div>
+  <div class="cy-tab" data-tab="indicatoren" id="t-indicatoren">
   <section class="cy-card wma-hero" id="wma">
     <div class="wma-main">
       <div class="cy-lbl">200-weeks gemiddelde</div>
@@ -412,49 +364,82 @@ window.dash = (() => {
     </div>
     <p class="cy-note wma-note">Gemiddelde van de laatste 200 weeksluitingen (zondag, UTC). EMA: recente weken tellen zwaarder. Groen = prijs onder het gemiddelde (historisch bodemgebied), oranje = binnen 5%. Verwachting: als de prijs op het niveau van de laatste weeksluiting blijft. Elke maandag komen de herberekende cijfers via ntfy.</p>
   </section>
+  <section class="cy-card" id="fng">
+    <h2>Fear &amp; Greed: nu vs eerdere dips</h2>
+    <p class="cy-note">Elke dip sinds februari 2018 (begin van de index) waarbij BTC het laagste punt in ±45 dagen bereikte, minstens 20% onder de top van de 120 dagen ervoor. Per dip: de laagste Fear &amp; Greed-score rond die dag (±7 dagen), het gemiddelde en het aantal dagen extreme angst (onder 25) in de 30 dagen ervoor, en of het een bodem werd (geen lagere koers in de 180 dagen erna).</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Fear &amp; Greed nu</div><div class="cy-num" id="bz-fg-now">—</div><div class="cy-sub" id="bz-fg-now-sub">laden…</div></div>
+      <div><div class="cy-lbl">Laagste 7 dagen · gem. 30 dagen</div><div class="cy-num" id="bz-fg-7">—</div><div class="cy-sub" id="bz-fg-7-sub">—</div></div>
+      <div><div class="cy-lbl">Dagen extreme angst (30 d)</div><div class="cy-num" id="bz-fg-xf">—</div><div class="cy-sub" id="bz-fg-xf-sub">—</div></div>
+      <div><div class="cy-lbl">Bij dips die bodem werden</div><div class="cy-num" id="bz-fg-held">—</div><div class="cy-sub" id="bz-fg-held-sub">—</div></div>
+    </div>
+    <p class="cy-sub" id="bz-fg-take"></p>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:var(--color-ok)"></i>Werd bodem</span>
+      <span><i class="sw" style="background:var(--color-bad)"></i>Daarna nog lager</span>
+      <span><i class="sw ring bodem"></i>Houdt tot nu (nog geen 180 dagen)</span>
+      <span><i class="sw" style="background:var(--color-fg)"></i>Nu</span>
+      <span><i class="sw bear"></i>Extreme angst</span>
+    </div>
+    <div class="cy-chart" id="bz-fg-chart"></div>
+    <h3 class="fut-h">Verloop sinds 2018</h3>
+    <p class="cy-note">0 is extreme angst, 100 extreme hebzucht (alternative.me). De rode band is extreme angst (onder 25).</p>
+    <div class="cy-chart" id="fng-chart" style="min-height:220px"></div>
+    <details class="bz-more">
+      <summary>Alle dips in een tabel</summary>
+      <div class="cy-tw">
+        <table>
+          <thead><tr><th>Dip</th><th class="r">Prijs</th><th class="r">Daling</th><th class="r">F&amp;G laagst</th><th class="r">Gem. 30 d</th><th class="r">Dagen &lt;25</th><th class="r">+90 dagen</th><th>Bodem?</th></tr></thead>
+          <tbody id="bz-fg-dips"><tr><td colspan="8" class="cy-sub">laden…</td></tr></tbody>
+        </table>
+      </div>
 
-  <section class="cy-tiles">
-    <div class="cy-card">
-      <div class="cy-lbl">Cyclustop 2025</div>
-      <div class="cy-num" data-draw="v" data-source="events" data-where="id=top4" data-field="price" data-fmt="usd">—</div>
-      <div class="cy-sub">Hoogste punt van deze cyclus</div>
-    </div>
-    <div class="cy-card">
-      <div class="cy-lbl">Laagste punt 2026</div>
-      <div class="cy-num" data-draw="v" data-source="events" data-where="id=low4" data-field="price" data-fmt="usd">—</div>
-      <div class="cy-sub">Voorlopige bodem van deze cyclus</div>
-    </div>
-    <div class="cy-card">
-      <div class="cy-lbl">Daling top → laagste punt</div>
-      <div class="cy-num bad" data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</div>
-      <div class="cy-sub">Vorige cycli zakten dieper</div>
-    </div>
-    <div class="cy-card">
-      <div class="cy-lbl">Prijs nu</div>
-      <div class="cy-num" data-draw="v" data-source="events" data-where="id=now" data-field="price" data-fmt="usd">—</div>
-      <div class="cy-sub" id="live-note">Laatst bekende koers</div>
-    </div>
-    <div class="cy-card">
-      <div class="cy-lbl">Dagen tot halving 5</div>
-      <div class="cy-num" data-draw="cd-days" data-source="events">—</div>
-      <div class="cy-sub">Schatting op basis van bloktijd</div>
-    </div>
+    </details>
   </section>
-
-  <section class="cy-card" id="koers">
-    <h2>Koers sinds 2010 met de vier halvings</h2>
-    <p class="cy-note">Logaritmische schaal: elke rasterlijn is tien keer de vorige. Rode banden zijn de bearmarkten van top naar bodem. <span id="koers-src">Pivotpunten verbonden met rechte lijnen; dagkoers laden…</span></p>
+  <section class="cy-card" id="miner">
+    <h2>Miner stress</h2>
+    <p class="cy-note">Miners verkopen hun BTC om stroom te betalen. Zakt de prijs onder hun kostprijs, dan schakelen zwakke miners uit en verkopen ze reserves: de hashrate daalt (hash ribbons: 30-daags gemiddelde onder het 60-daagse). Dat viel samen met de bodems van 2018, 2020 en 2022. Kostprijs = stroomverbruik van het netwerk ÷ BTC die per dag gedolven wordt.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Stroomkost per BTC</div><div class="cy-num" id="bz-cost">—</div><div class="cy-sub" id="bz-cost-sub">laden…</div></div>
+      <div><div class="cy-lbl">Hashprice</div><div class="cy-num" id="bz-hp">—</div><div class="cy-sub" id="bz-hp-sub">USD per PH/s per dag</div></div>
+      <div><div class="cy-lbl">Hashrate (7 dagen)</div><div class="cy-num" id="bz-hr">—</div><div class="cy-sub" id="bz-hr-sub">—</div></div>
+      <div><div class="cy-lbl">Moeilijkheid</div><div class="cy-num" id="bz-diff">—</div><div class="cy-sub" id="bz-diff-sub">—</div></div>
+    </div>
+    <div class="dca-form">
+      <label>Gemiddelde efficiëntie (J/TH) <input id="bz-jth" type="number" min="5" max="60" step="1" inputmode="decimal"></label>
+      <label>Stroomprijs ($/kWh) <input id="bz-kwh" type="number" min="0.01" max="0.2" step="0.005" inputmode="decimal"></label>
+    </div>
     <div class="cy-legend">
-      <span><i class="sw top"></i>Cyclustop</span>
-      <span><i class="sw bodem"></i>Bodem</span>
-      <span><i class="sw ring top"></i>Tussentop</span>
-      <span><i class="sw ring bodem"></i>Tussenbodem</span>
-      <span><i class="sw halving"></i>Halving</span>
-      <span><i class="sw bear"></i>Bearmarkt</span>
+      <span><i class="sw" style="background:var(--color-warn)"></i>Hashrate 30 dagen</span>
+      <span><i class="sw" style="background:#5b8def"></i>Hashrate 60 dagen</span>
+      <span><i class="sw bear"></i>Miner-kapitulatie (30D onder 60D)</span>
     </div>
-    <div class="cy-chart" data-draw="chart" data-source="events"></div>
+    <div class="cy-chart" id="bz-hr-chart"></div>
   </section>
-
+  <section class="cy-card" id="liquidaties">
+    <h2>Liquidaties (geschatte kaart)</h2>
+    <p class="cy-note">Hefboomposities worden gedwongen gesloten als de prijs hun liquidatieprijs raakt. Grote clusters long-liquidaties onder de prijs werken als magneet: een daling erheen versnelt door gedwongen verkopen, en daarna is de markt "schoon". Model op basis van 4-uurscandles van Hyperliquid (90 dagen): elke candle opent posities met 3× tot 100× hefboom; posities waarvan de liquidatieprijs al geraakt is, vallen weg. De cluster wordt gezocht vanaf 5% onder de prijs (de clusters vlak onder de prijs zijn 50–100×-posities die bij elke schommeling verdwijnen). Een schatting, geen echte orderdata.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Grootste long-cluster</div><div class="cy-num" id="bz-lq">—</div><div class="cy-sub" id="bz-lq-sub">laden…</div></div>
+      <div><div class="cy-lbl">Funding (7 dagen, per jaar)</div><div class="cy-num" id="bz-fund">—</div><div class="cy-sub" id="bz-fund-sub">—</div></div>
+      <div><div class="cy-lbl">Open interest (Hyperliquid)</div><div class="cy-num" id="bz-oi">—</div><div class="cy-sub" id="bz-oi-sub">—</div></div>
+    </div>
+    <div class="cy-legend">
+      <span><i class="sw" style="background:var(--color-bad)"></i>Long-liquidaties (gedwongen verkopen)</span>
+      <span><i class="sw" style="background:var(--color-ok)"></i>Short-liquidaties (gedwongen aankopen)</span>
+    </div>
+    <div class="cy-chart" id="bz-liq-chart"></div>
+  </section>
+  <section class="cy-card" id="mvrv">
+    <h2>Realized price &amp; MVRV</h2>
+    <p class="cy-note">De realized price is de gemiddelde prijs waartegen alle BTC voor het laatst verplaatst zijn: de kostprijs van de hele markt. MVRV = prijs ÷ realized price. Onder 1 staat de gemiddelde houder op verlies; daar vielen de bodems van 2015, 2018 en 2022 (Coin Metrics).</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Realized price</div><div class="cy-num" id="bz-rp">—</div><div class="cy-sub" id="bz-rp-sub">laden…</div></div>
+      <div><div class="cy-lbl">MVRV nu</div><div class="cy-num" id="bz-mvrv">—</div><div class="cy-sub">Bodemzone onder 1</div></div>
+      <div><div class="cy-lbl">MVRV bij eerdere bodems</div><div class="cy-sub fut-big" id="bz-mvrv-hist">—</div></div>
+    </div>
+    <div class="cy-chart" id="bz-mvrv-chart"></div>
+  </section>
   <section class="cy-card" id="indicatoren">
     <h2>Bodemindicatoren</h2>
     <p class="cy-note">Live berekend uit dagkoersen (<span id="ind-src">laden…</span>). Groen betekent dat de indicator in de zone staat waar eerdere cyclusbodems vielen. De bodemscore telt hoeveel van de eerste vier groen zijn.</p>
@@ -474,7 +459,115 @@ window.dash = (() => {
     </div>
     <div class="cy-chart" id="ind-chart"></div>
   </section>
-
+  </div>
+  <div class="cy-tab" data-tab="cyclus" id="t-cyclus">
+  <section class="cy-card" id="koers">
+    <h2>Koers sinds 2010 met de vier halvings</h2>
+    <p class="cy-note">Logaritmische schaal: elke rasterlijn is tien keer de vorige. Rode banden zijn de bearmarkten van top naar bodem. <span id="koers-src">Pivotpunten verbonden met rechte lijnen; dagkoers laden…</span></p>
+    <div class="cy-legend">
+      <span><i class="sw top"></i>Cyclustop</span>
+      <span><i class="sw bodem"></i>Bodem</span>
+      <span><i class="sw ring top"></i>Tussentop</span>
+      <span><i class="sw ring bodem"></i>Tussenbodem</span>
+      <span><i class="sw halving"></i>Halving</span>
+      <span><i class="sw bear"></i>Bearmarkt</span>
+    </div>
+    <div class="cy-chart" data-draw="chart" data-source="events"></div>
+  </section>
+  <section class="cy-card" id="vergelijk">
+    <h2>Bearmarkt 2022 vs nu</h2>
+    <p class="cy-note">Dagkoers (Bybit BTCUSDT) vanaf de cyclustop, als % van de top: 2022 telt vanaf 10 nov 2021, nu vanaf 6 okt 2025. De gestippelde lijn toont hoe 2022 verder liep na de dag van vandaag. Gelijkenis is de correlatie tussen beide lijnen over dezelfde dagen: 100% is exact dezelfde vorm, 0% is geen verband.</p>
+    <div class="cy-tiles cmp-tiles">
+      <div><div class="cy-lbl">Gelijkenis met 2022</div><div class="cy-num" id="cmp-corr">—</div></div>
+      <div><div class="cy-lbl">Gem. verschil in daling</div><div class="cy-num" id="cmp-mad">—</div></div>
+      <div><div class="cy-lbl">Nu, dag <span id="cmp-day">—</span> na de top</div><div class="cy-num" id="cmp-now">—</div></div>
+      <div><div class="cy-lbl">2022 op dezelfde dag</div><div class="cy-num" id="cmp-then">—</div></div>
+    </div>
+    <p class="cy-sub" id="cmp-take">Koersdata laden…</p>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:#f7931a"></i>Nu (vanaf top okt 2025)</span>
+      <span><i class="sw" style="background:#14b8a6"></i>2022 (vanaf top nov 2021)</span>
+      <span><i class="sw proj"></i>Vervolg van 2022</span>
+    </div>
+    <div class="cy-chart" id="cmp-chart"></div>
+    <h2 style="margin-top:var(--cds-gap-lg)">Bodemscenario's bij een dip in Q4</h2>
+    <p class="cy-note">Berekend vanaf de live prijs, de cyclusbodem (standaard $57.700 in juni, instelbaar onder Alerts) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van juni rond het 200-weeks gemiddelde. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
+    <div class="cy-tw">
+      <table>
+        <thead><tr><th>Scenario</th><th class="r">Bodemzone</th><th class="r">Vanaf nu</th><th class="r">Vanaf top</th></tr></thead>
+        <tbody id="cmp-zones"></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="cy-card" id="overlay">
+    <h2>Alle cycli over elkaar</h2>
+    <p class="cy-note">Elke cyclus start bij zijn halving (1× = de prijs op de halvingdag). Zo zie je waar deze cyclus staat ten opzichte van dezelfde maand in eerdere cycli. Elke cyclus stijgt minder hard dan de vorige.</p>
+    <div class="cy-chart ov" data-draw="overlay" data-source="events"></div>
+  </section>
+  <section class="cy-card" id="klok">
+    <h2>Cyclusklok: de 4 kwarten van een halvingcyclus</h2>
+    <p class="cy-note">Eén rondje is één cyclus, van halving tot halving; elk kwart is ongeveer één jaar. Elke ring is een cyclus (binnen het oudst, buiten de huidige). Rood is de top, groen de bodem, de wijzer staat op vandaag.</p>
+    <div class="cy-clock" data-draw="clock" data-source="events"></div>
+    <p class="cy-sub">De wijzer staat op <b data-draw="clock-now" data-source="events">—</b>. Eerdere tops vielen op <b data-draw="clock-tops" data-source="events">—</b>, eerdere bodems op <b data-draw="clock-lows" data-source="events">—</b>.</p>
+  </section>
+  <section class="cy-card" id="kwartalen">
+    <h2>Tops en bodems per kwartaal</h2>
+    <p class="cy-note">Elke rij is een cyclus, vanaf het kwartaal van zijn halving; elke kolom is een kwartaal. Zo staan de tops (jaar 2) en bodems (jaar 3) van elke cyclus onder elkaar. Groen: na een bodem, rood: na een top, gestippeld: projectie. Het omkaderde vak is nu.</p>
+    <div class="cy-legend">
+      <span>▲ top</span><span>▼ bodem</span><span>△ tussentop</span><span>▽ tussenbodem</span><span>◆ halving</span><span>● nu</span>
+    </div>
+    <div class="cy-q cy-qhead"><span></span><span>Jaar 1</span><span>Jaar 2</span><span>Jaar 3</span><span>Jaar 4</span></div>
+    <div class="cy-q cy-qbody" data-draw="quarters" data-source="events"></div>
+    <p class="cy-sub" id="q-detail">Tik of beweeg over een vak voor de details.</p>
+  </section>
+  <div class="cy-grid2">
+    <section class="cy-card" id="countdown">
+      <h2>Halving-countdown</h2>
+      <p class="cy-note">Elke halving valt op een vast blok. De datum is een schatting op basis van de gemiddelde bloktijd; de echte dag hangt af van de hashrate.</p>
+      <div class="cy-num" data-draw="cd-days" data-source="events">—</div>
+      <div class="cy-sub">dagen te gaan · <b data-draw="cd-pct" data-source="events">—</b> van deze cyclus voorbij</div>
+      <div class="cy-bar" data-draw="cd-bar" data-source="events"></div>
+      <p class="cy-sub" id="cd-live">Blokhoogte laden…</p>
+    </section>
+    <section class="cy-card" id="halvings">
+      <h2>Halvings en blokbeloning</h2>
+      <p class="cy-note">Bij elke halving gaat de beloning per blok door twee. De laatste rij is verwacht.</p>
+      <div class="cy-tw">
+        <table data-source="events" data-row-key="label">
+          <thead><tr>
+            <th data-field="label">Halving</th>
+            <th data-field="date">Datum</th>
+            <th class="r" data-field="block">Blok</th>
+            <th class="r" data-field="reward">Beloning (BTC)</th>
+            <th class="r" data-field="price">Prijs op die dag</th>
+          </tr></thead>
+          <tbody data-draw="halvings"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <section class="cy-card" id="cycli">
+    <h2>Cijfers per cyclus</h2>
+    <p class="cy-note">Daling is van de cyclustop naar de laagste bodem daarna. Cyclus 0 had nog geen halving vooraf; de bodem van cyclus 4 is voorlopig.</p>
+    <div class="cy-tw">
+      <table data-source="cycles" data-row-key="cyclus">
+        <thead><tr>
+          <th data-field="cyclus">Cyclus</th>
+          <th data-field="halving">Halving</th>
+          <th data-field="top_kwartaal">Top</th>
+          <th class="r" data-field="top_prijs">Topprijs</th>
+          <th data-field="bodem_kwartaal">Bodem</th>
+          <th class="r" data-field="bodem_prijs">Bodemprijs</th>
+          <th class="r" data-field="daling">Daling</th>
+          <th class="r" data-field="maanden_halving_top">Halving → top (mnd)</th>
+          <th class="r" data-field="maanden_top_bodem">Top → bodem (mnd)</th>
+        </tr></thead>
+        <tbody data-draw="cycletable"></tbody>
+      </table>
+    </div>
+  </section>
+  </div>
+  <div class="cy-tab" data-tab="modellen" id="t-modellen">
   <section class="cy-card" id="rainbow">
     <h2>Rainbowchart</h2>
     <p class="cy-note">Een logaritmische regressielijn door de hele koershistorie, opgedeeld in 9 even brede banden. Live berekend uit de koersdata, dus de banden schuiven licht mee met nieuwe data. Een hulpmiddel om "duur" en "goedkoop" te zien, geen voorspelling.</p>
@@ -497,7 +590,6 @@ window.dash = (() => {
     </div>
     <div class="cy-chart" id="rb-chart" style="min-height:320px"></div>
   </section>
-
   <section class="cy-card" id="toekomst">
     <h2>Toekomstmodellen</h2>
     <p class="cy-note">Drie modellen die vooruit kijken, live berekend uit de koersdata en de cycluspunten. Ze laten zien wat het verleden doortrekt, niet wat er gaat gebeuren.</p>
@@ -537,117 +629,8 @@ window.dash = (() => {
     </div>
     <div class="cy-chart" id="lgc-chart"></div>
   </section>
-
-  <section class="cy-card" id="fng">
-    <h2>Fear &amp; Greed-index</h2>
-    <p class="cy-note">0 is extreme angst, 100 extreme hebzucht (alternative.me, sinds 2018). De rode band is extreme angst (onder 25): daar vielen de vorige bodems.</p>
-    <div class="cy-tiles fng-tiles">
-      <div><div class="cy-lbl">Nu</div><div class="cy-num" id="fng-now">—</div><div class="cy-sub" id="fng-now-lbl">laden…</div></div>
-      <div><div class="cy-lbl">Bij bodem dec 2018</div><div class="cy-num" id="fng-b18">—</div></div>
-      <div><div class="cy-lbl">Bij bodem nov 2022</div><div class="cy-num" id="fng-b22">—</div></div>
-      <div><div class="cy-lbl">Bij low juni 2026</div><div class="cy-num" id="fng-b26">—</div></div>
-    </div>
-    <div class="cy-chart" id="fng-chart" style="min-height:220px"></div>
-  </section>
-
-  <section class="cy-card" id="overlay">
-    <h2>Alle cycli over elkaar</h2>
-    <p class="cy-note">Elke cyclus start bij zijn halving (1× = de prijs op de halvingdag). Zo zie je waar deze cyclus staat ten opzichte van dezelfde maand in eerdere cycli. Elke cyclus stijgt minder hard dan de vorige.</p>
-    <div class="cy-chart ov" data-draw="overlay" data-source="events"></div>
-  </section>
-
-  <div class="cy-grid2">
-    <section class="cy-card" id="countdown">
-      <h2>Halving-countdown</h2>
-      <p class="cy-note">Elke halving valt op een vast blok. De datum is een schatting op basis van de gemiddelde bloktijd; de echte dag hangt af van de hashrate.</p>
-      <div class="cy-num" data-draw="cd-days" data-source="events">—</div>
-      <div class="cy-sub">dagen te gaan · <b data-draw="cd-pct" data-source="events">—</b> van deze cyclus voorbij</div>
-      <div class="cy-bar" data-draw="cd-bar" data-source="events"></div>
-      <p class="cy-sub" id="cd-live">Blokhoogte laden…</p>
-    </section>
-    <section class="cy-card" id="halvings">
-      <h2>Halvings en blokbeloning</h2>
-      <p class="cy-note">Bij elke halving gaat de beloning per blok door twee. De laatste rij is verwacht.</p>
-      <div class="cy-tw">
-        <table data-source="events" data-row-key="label">
-          <thead><tr>
-            <th data-field="label">Halving</th>
-            <th data-field="date">Datum</th>
-            <th class="r" data-field="block">Blok</th>
-            <th class="r" data-field="reward">Beloning (BTC)</th>
-            <th class="r" data-field="price">Prijs op die dag</th>
-          </tr></thead>
-          <tbody data-draw="halvings"></tbody>
-        </table>
-      </div>
-    </section>
   </div>
-
-  <section class="cy-card" id="vergelijk">
-    <h2>Bearmarkt 2022 vs nu</h2>
-    <p class="cy-note">Dagkoers (Bybit BTCUSDT) vanaf de cyclustop, als % van de top: 2022 telt vanaf 10 nov 2021, nu vanaf 6 okt 2025. De gestippelde lijn toont hoe 2022 verder liep na de dag van vandaag. Gelijkenis is de correlatie tussen beide lijnen over dezelfde dagen: 100% is exact dezelfde vorm, 0% is geen verband.</p>
-    <div class="cy-tiles cmp-tiles">
-      <div><div class="cy-lbl">Gelijkenis met 2022</div><div class="cy-num" id="cmp-corr">—</div></div>
-      <div><div class="cy-lbl">Gem. verschil in daling</div><div class="cy-num" id="cmp-mad">—</div></div>
-      <div><div class="cy-lbl">Nu, dag <span id="cmp-day">—</span> na de top</div><div class="cy-num" id="cmp-now">—</div></div>
-      <div><div class="cy-lbl">2022 op dezelfde dag</div><div class="cy-num" id="cmp-then">—</div></div>
-    </div>
-    <p class="cy-sub" id="cmp-take">Koersdata laden…</p>
-    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
-      <span><i class="sw" style="background:#f7931a"></i>Nu (vanaf top okt 2025)</span>
-      <span><i class="sw" style="background:#14b8a6"></i>2022 (vanaf top nov 2021)</span>
-      <span><i class="sw proj"></i>Vervolg van 2022</span>
-    </div>
-    <div class="cy-chart" id="cmp-chart"></div>
-    <h2 style="margin-top:var(--cds-gap-lg)">Bodemscenario's bij een dip in Q4</h2>
-    <p class="cy-note">Berekend vanaf de live prijs, de cyclusbodem (standaard $57.700 in juni, instelbaar onder Alerts) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van juni rond het 200-weeks gemiddelde. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
-    <div class="cy-tw">
-      <table>
-        <thead><tr><th>Scenario</th><th class="r">Bodemzone</th><th class="r">Vanaf nu</th><th class="r">Vanaf top</th></tr></thead>
-        <tbody id="cmp-zones"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="cy-card" id="klok">
-    <h2>Cyclusklok: de 4 kwarten van een halvingcyclus</h2>
-    <p class="cy-note">Eén rondje is één cyclus, van halving tot halving; elk kwart is ongeveer één jaar. Elke ring is een cyclus (binnen het oudst, buiten de huidige). Rood is de top, groen de bodem, de wijzer staat op vandaag.</p>
-    <div class="cy-clock" data-draw="clock" data-source="events"></div>
-    <p class="cy-sub">De wijzer staat op <b data-draw="clock-now" data-source="events">—</b>. Eerdere tops vielen op <b data-draw="clock-tops" data-source="events">—</b>, eerdere bodems op <b data-draw="clock-lows" data-source="events">—</b>.</p>
-  </section>
-
-  <section class="cy-card" id="kwartalen">
-    <h2>Tops en bodems per kwartaal</h2>
-    <p class="cy-note">Elke rij is een cyclus, vanaf het kwartaal van zijn halving; elke kolom is een kwartaal. Zo staan de tops (jaar 2) en bodems (jaar 3) van elke cyclus onder elkaar. Groen: na een bodem, rood: na een top, gestippeld: projectie. Het omkaderde vak is nu.</p>
-    <div class="cy-legend">
-      <span>▲ top</span><span>▼ bodem</span><span>△ tussentop</span><span>▽ tussenbodem</span><span>◆ halving</span><span>● nu</span>
-    </div>
-    <div class="cy-q cy-qhead"><span></span><span>Jaar 1</span><span>Jaar 2</span><span>Jaar 3</span><span>Jaar 4</span></div>
-    <div class="cy-q cy-qbody" data-draw="quarters" data-source="events"></div>
-    <p class="cy-sub" id="q-detail">Tik of beweeg over een vak voor de details.</p>
-  </section>
-
-  <section class="cy-card" id="cycli">
-    <h2>Cijfers per cyclus</h2>
-    <p class="cy-note">Daling is van de cyclustop naar de laagste bodem daarna. Cyclus 0 had nog geen halving vooraf; de bodem van cyclus 4 is voorlopig.</p>
-    <div class="cy-tw">
-      <table data-source="cycles" data-row-key="cyclus">
-        <thead><tr>
-          <th data-field="cyclus">Cyclus</th>
-          <th data-field="halving">Halving</th>
-          <th data-field="top_kwartaal">Top</th>
-          <th class="r" data-field="top_prijs">Topprijs</th>
-          <th data-field="bodem_kwartaal">Bodem</th>
-          <th class="r" data-field="bodem_prijs">Bodemprijs</th>
-          <th class="r" data-field="daling">Daling</th>
-          <th class="r" data-field="maanden_halving_top">Halving → top (mnd)</th>
-          <th class="r" data-field="maanden_top_bodem">Top → bodem (mnd)</th>
-        </tr></thead>
-        <tbody data-draw="cycletable"></tbody>
-      </table>
-    </div>
-  </section>
-
+  <div class="cy-tab" data-tab="alerts" id="t-alerts">
   <section class="cy-card" id="alerts">
     <h2>Alerts &amp; instellingen</h2>
     <p class="cy-note">Een melding zodra BTC een bodemzone binnengaat, of een week sluit onder de cyclusbodem. Dit werkt zolang deze pagina open staat (ook als tabblad op de achtergrond). Voor meldingen 24/7 met de pagina dicht is een Cloudflare Worker nodig.</p>
@@ -697,6 +680,7 @@ window.dash = (() => {
     <p class="cy-sub">Status: <b id="al-state">—</b></p>
     <ul class="al-log" id="al-log"></ul>
   </section>
+  </div>
 
   <p class="cy-foot">Prijzen zijn afgerond en verschillen per exchange. Het patroon is historisch, geen garantie voor de toekomst.</p>
 </div>
@@ -2262,9 +2246,15 @@ window.bodem = (() => {
       const c = document.createElement('div'); c.className = 'cy-sub'; c.textContent = sub;
       d.append(a, b, c); box.append(d);
     };
-    mk(on >= 5 ? 'g' : on >= 3 ? 'y' : 'r', 'Kapitulatiescore', known.length ? `${on}/${known.length}` : '—',
-      !known.length ? 'laden…' : on >= 5 ? 'Lijkt op een echte capitulatie' : on >= 3 ? 'Deels: stress, nog geen volle capitulatie' : 'Weinig capitulatie: geen klassiek bodemmoment');
+    setText('bz-sig-score', known.length ? `${on}/${known.length} aan` : '');
     sig.forEach((s) => mk(s.ok ? 'g' : '', s.name, s.val, s.sub));
+    if (known.length) {
+      setText('ov-score', `${on}/${known.length}`);
+      setText('ov-score-sub', on >= 5 ? 'Lijkt op een capitulatie' : on >= 3 ? 'Stress, nog geen capitulatie' : 'Geen klassiek bodemmoment');
+      const el = $('ov-score'); if (el) el.style.color = on >= 5 ? 'var(--color-ok)' : on >= 3 ? 'var(--color-warn)' : '';
+    }
+    if (P && w) { setText('ov-wma', pct(P / w - 1)); setText('ov-wma-sub', `200WMA ${usd(Math.round(w))}` + (P < w ? ' · bodemgebied' : '')); const el = $('ov-wma'); if (el) el.style.color = P < w ? 'var(--color-ok)' : P / w < 1.05 ? 'var(--color-warn)' : ''; }
+    if (fng) { setText('ov-fng', String(fng.v)); setText('ov-fng-sub', nlF(fng.cls) + (fng.v < 25 ? ' · bodemzone' : ' · bodems: onder 25')); const el = $('ov-fng'); if (el) el.style.color = fng.v < 25 ? 'var(--color-ok)' : ''; }
     return { on, n: known.length };
   };
 
@@ -2513,22 +2503,35 @@ window.bodem = (() => {
 </script>
 
 <script>
-// ---- Vaste menubalk: actieve sectie markeren ----
+// ---- Tabbladen: één groep tegelijk; #t-naam opent een tabblad, #sectie-id opent het tabblad van die sectie ----
 (() => {
-  const links = [...document.querySelectorAll('.cy-nav a')];
-  const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
-  const secs = [...byId.keys()].map((id) => document.getElementById(id)).filter(Boolean);
-  if (!('IntersectionObserver' in window) || !secs.length) return;
-  const vis = new Map();
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((e) => vis.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null));
-    const cur = [...vis.entries()].filter(([, v]) => v != null).sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]))[0];
-    if (!cur) return;
-    links.forEach((a) => a.classList.remove('on'));
-    const a = byId.get(cur[0]);
-    if (a) { a.classList.add('on'); a.scrollIntoView({ block: 'nearest', inline: 'center' }); }
-  }, { rootMargin: '-60px 0px -55% 0px' });
-  secs.forEach((s) => io.observe(s));
+  const tabs = [...document.querySelectorAll('.cy-tabs a')];
+  const panes = [...document.querySelectorAll('.cy-tab')];
+  const KEY = 'btcHalvingTab';
+  const show = (name, el) => {
+    if (!panes.some((p) => p.dataset.tab === name)) name = 'overzicht';
+    panes.forEach((p) => { p.hidden = p.dataset.tab !== name; });
+    tabs.forEach((a) => { const on = a.dataset.tab === name; a.classList.toggle('on', on); a.setAttribute('aria-selected', String(on)); if (on) a.scrollIntoView({ block: 'nearest', inline: 'center' }); });
+    try { localStorage.setItem(KEY, name); } catch (e) { /* geen opslag */ }
+    window.dispatchEvent(new Event('resize'));   // grafieken in een net zichtbaar tabblad op de juiste breedte tekenen
+    if (el) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' }));
+  };
+  const route = (first) => {
+    const h = decodeURIComponent(location.hash.slice(1));
+    if (h.startsWith('t-')) return show(h.slice(2));
+    const el = h && document.getElementById(h), pane = el && el.closest('.cy-tab');
+    if (pane) return show(pane.dataset.tab, pane.dataset.tab === 'overzicht' && el.id === 'overzicht' ? null : el);
+    let saved = null; try { saved = localStorage.getItem(KEY); } catch (e) { /* */ }
+    show(first && saved ? saved : 'overzicht');
+  };
+  tabs.forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    history.replaceState(null, '', '#t-' + a.dataset.tab);
+    show(a.dataset.tab); window.scrollTo({ top: 0 });
+  }));
+  window.addEventListener('hashchange', () => route(false));
+  document.querySelectorAll('details').forEach((d) => d.addEventListener('toggle', () => window.dispatchEvent(new Event('resize'))));
+  route(true);
 })();
 </script>
 
@@ -2540,17 +2543,21 @@ window.bodem = (() => {
   const note = document.getElementById('live-note');
   const tick = async () => {
     try {
-      const r = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT', { cache: 'no-store' });
-      const j = await r.json();
-      const p = +j.result.list[0].lastPrice;
+      const srcs = [
+        ['Bybit', async () => +(await (await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT', { cache: 'no-store' })).json()).result.list[0].lastPrice],
+        ['Coinbase', async () => +(await (await fetch('https://api.exchange.coinbase.com/products/BTC-USD/ticker', { cache: 'no-store' })).json()).price],
+        ['Hyperliquid', async () => +(await (await fetch('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"type":"allMids"}' })).json()).BTC],
+      ];
+      let p = null, src = '';
+      for (const [n, f] of srcs) { try { p = await f(); if (p > 0) { src = n; break; } } catch (e) { /* volgende bron */ } }
       if (!(p > 0)) throw new Error('geen prijs');
       const today = new Date().toISOString().slice(0, 10);
-      const rows = window.BTC_EVENTS.map((e) => e.id === 'now' ? { ...e, price: p, date: today, label: 'Live prijs (Bybit BTCUSDT)' } : e);
+      const rows = window.BTC_EVENTS.map((e) => e.id === 'now' ? { ...e, price: p, date: today, label: `Live prijs (${src})` } : e);
       window.BTC_EVENTS = rows;
       dash.setRows('events', rows);
       window.btcLive = p;
       window.dispatchEvent(new CustomEvent('btcprice', { detail: p }));
-      if (note) note.textContent = 'Live via Bybit · ' + new Date().toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+      if (note) note.textContent = `Live via ${src} · ` + new Date().toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
     } catch (e) {
       if (note) note.textContent = 'Laatst bekende koers (live niet bereikbaar)';
     }
