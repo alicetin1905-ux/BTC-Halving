@@ -322,7 +322,7 @@ window.dash = (() => {
     </div>
 
     <h3 class="fut-h">Kapitulatiesignalen nu</h3>
-    <p class="cy-note">Bij de bodems van 2015, 2018 en 2022 stonden de meeste van deze signalen tegelijk aan. Hoe meer groen, hoe meer de markt op een echte capitulatie lijkt.</p>
+    <p class="cy-note">Bij de bodems van 2015, 2018 en 2022 stonden de meeste van deze signalen tegelijk aan. Hoe meer groen, hoe meer de markt op een echte capitulatie lijkt. Gaat een signaal aan of uit, dan kan je een ntfy-melding krijgen, ook met de app dicht (zie <a href="#alerts">Alerts</a>).</p>
     <div class="ind-tiles" id="bz-sig"></div>
 
     <h3 class="fut-h">Fear &amp; Greed: nu vs eerdere dips</h3>
@@ -671,6 +671,10 @@ window.dash = (() => {
     <details class="al-tg">
       <summary>Wekelijks 200WMA-rapport (ook met de app dicht)</summary>
       <p class="cy-note">Elke maandag rond 01:15 (Belgische tijd) berekent GitHub het nieuwe 200-weeks gemiddelde en stuurt het naar je ntfy-onderwerp. Eenmalig instellen in je repo: Settings → Secrets and variables → Actions → New repository secret, naam <b>NTFY_TOPIC</b>, waarde je onderwerp. Testen kan via Actions → "Wekelijks 200WMA naar ntfy" → Run workflow.</p>
+    </details>
+    <details class="al-tg">
+      <summary>Bodemsignalen bij elke verandering (ook met de app dicht)</summary>
+      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de zeven kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen en 10+ dagen extreme angst in een maand. Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
     </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>

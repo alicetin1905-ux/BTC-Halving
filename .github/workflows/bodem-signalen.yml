@@ -1,0 +1,51 @@
+name: Bodemsignalen naar ntfy
+
+on:
+  schedule:
+    # Elke 3 uur (op minuut 17, om de drukte op het hele uur te vermijden)
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'check = alleen melden bij een verandering, status = altijd een overzicht sturen (test)'
+        required: false
+        default: check
+        type: choice
+        options: [check, status]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bodem-signalen
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # Vorige toestand van de signalen ophalen (de nieuwste cache die met dit voorvoegsel begint)
+      - uses: actions/cache/restore@v4
+        with:
+          path: .state
+          key: bodem-signalen-${{ github.run_id }}
+          restore-keys: bodem-signalen-
+      - name: Signalen berekenen en bij verandering naar ntfy sturen
+        run: node .github/scripts/bodem-signalen.mjs
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ vars.NTFY_SERVER }}
+          MINER_JTH: ${{ vars.MINER_JTH }}
+          MINER_KWH: ${{ vars.MINER_KWH }}
+          PAGE_URL: ${{ vars.PAGE_URL_BODEM || 'https://alicetin1905-ux.github.io/BTC-Halving/#bodem' }}
+          MODE: ${{ inputs.mode || 'check' }}
+      - uses: actions/cache/save@v4
+        if: success()
+        with:
+          path: .state
+          key: bodem-signalen-${{ github.run_id }}
