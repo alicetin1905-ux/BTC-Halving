@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>BTC Halving Cyclus</title>
-<meta name="description" content="Bitcoin 4-jarige cyclus: tops, bodems en halvings per kwartaal, cyclus-overlay en halving-countdown.">
+<meta name="description" content="Bitcoin 4-jarige cyclus: bodemzone 2026 uit acht modellen, miner stress, liquidaties, tops, bodems en halvings.">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
@@ -200,6 +200,33 @@ html{scroll-behavior:smooth}
 .wma-coins td.good{color:var(--color-ok)}.wma-coins td.warn{color:var(--color-warn)}
 @media (max-width:520px){.wma-coins .wma-d{display:none}.wma-coins th,.wma-coins td{padding:6px 5px}}
 .wma-pct{font-size:var(--cds-font-size-caption);opacity:.85}
+.bz{border-color:color-mix(in srgb,var(--color-ok) 45%,var(--color-border-line))}
+.bz-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:var(--cds-gap-lg);align-items:center;margin-top:var(--cds-gap-sm)}
+.bz-big{font-family:var(--font-anthropic-serif);font-size:40px;line-height:1.1;color:var(--color-ok);font-variant-numeric:tabular-nums;margin:2px 0}
+@media (max-width:600px){.bz-hero{grid-template-columns:1fr}.bz-big{font-size:32px}}
+.sw.bzsw{border-radius:2px}.sw.bzsw.core{background:color-mix(in srgb,var(--color-ok) 45%,transparent)}.sw.bzsw.wide{background:color-mix(in srgb,var(--color-ok) 16%,transparent)}
+.bz-core{fill:color-mix(in srgb,var(--color-ok) 20%,transparent)}
+.bz-wide{fill:color-mix(in srgb,var(--color-ok) 8%,transparent)}
+.bz-dens{fill:color-mix(in srgb,var(--color-ok) 35%,transparent);stroke:var(--color-ok);stroke-width:1.5}
+.bz-bar{fill:var(--color-fg);fill-opacity:.55}
+.bz-bar.off{fill-opacity:.12}
+.bz-rowlab{fill:var(--color-fg);font-size:var(--cds-font-size-caption)}
+.bz-rowlab.off{fill:var(--color-fg-muted);text-decoration:line-through}
+.bz-now{stroke:var(--color-fg);stroke-width:1.5}
+.bz-low{stroke:var(--color-ok);stroke-width:1.5;stroke-dasharray:4 3}
+#bz-chart{min-height:340px}
+#bz-hr-chart,#bz-liq-chart,#bz-mvrv-chart{min-height:240px}
+#bz-fg-chart{min-height:260px}
+.cy tr.bz-now-row td{font-weight:600;background:color-mix(in srgb,var(--color-fg) 5%,transparent)}
+.bz-table td{vertical-align:top}
+.bz-table td:first-child{width:28px}
+.bz-table .cy-sub{white-space:normal;max-width:34rem}
+.bz-table tr.off td{opacity:.5}
+.bz-liq-l{fill:var(--color-bad);fill-opacity:.75}
+.bz-liq-s{fill:var(--color-ok);fill-opacity:.75}
+.bz-cl{fill:color-mix(in srgb,var(--color-bad) 10%,transparent)}
+.bz-cap{fill:color-mix(in srgb,var(--color-bad) 12%,transparent)}
+.bz-mvrv-low{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
 </style>
 
 <script>
@@ -244,6 +271,7 @@ window.dash = (() => {
 <div class="cy">
   <nav class="cy-nav" aria-label="Secties">
     <a href="#overzicht">Overzicht</a>
+    <a href="#bodem">Bodem 2026</a>
     <a href="#wma">200WMA</a>
     <a href="#koers">Koers</a>
     <a href="#indicatoren">Indicatoren</a>
@@ -261,6 +289,108 @@ window.dash = (() => {
     <h1>BTC 4-jarige cyclus</h1>
     <p>Sinds de eerste halving viel elke cyclustop in Q4, gemiddeld <b data-draw="v" data-source="summary" data-row="0" data-field="gem_halving_top" data-fmt="int">—</b> maanden na de halving, en volgde de bodem ongeveer <b data-draw="v" data-source="summary" data-row="0" data-field="gem_top_bodem" data-fmt="int">—</b> maanden later. Deze cyclus zakte BTC <b data-draw="v" data-source="cycles" data-where="cyclus=Cyclus%204" data-field="daling" data-fmt="pct">—</b> vanaf de top: de kleinste daling ooit.</p>
   </header>
+
+  <section class="cy-card bz" id="bodem">
+    <h2>Bodemzone 2026: alle signalen samen</h2>
+    <p class="cy-note">Acht modellen geven elk een prijszone voor de bodem (of de volgende koopzone) van deze cyclus. Waar veel zones overlappen, ligt de kernzone. Alles wordt live berekend; vink modellen uit om te zien hoe de zone verschuift. Een kansverdeling uit historische patronen, geen voorspelling.</p>
+    <div class="bz-hero">
+      <div>
+        <div class="cy-lbl">Kernzone (50% van het gewicht)</div>
+        <div class="bz-big" id="bz-core">—</div>
+        <div class="cy-sub" id="bz-core-sub">laden…</div>
+      </div>
+      <div class="wma-grid">
+        <div><div class="cy-lbl">Brede zone (80%)</div><div class="wma-v" id="bz-wide">—</div></div>
+        <div><div class="cy-lbl">Meeste overlap rond</div><div class="wma-v" id="bz-peak">—</div></div>
+        <div><div class="cy-lbl">Prijs nu t.o.v. kernzone</div><div class="wma-v" id="bz-dist">—</div></div>
+        <div><div class="cy-lbl">Historisch tijdvenster bodem</div><div class="wma-v" id="bz-time">—</div></div>
+      </div>
+    </div>
+    <p class="cy-sub" id="bz-time-sub"></p>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw bzsw core"></i>Kernzone</span>
+      <span><i class="sw bzsw wide"></i>Brede zone</span>
+      <span><i class="sw" style="background:var(--color-fg)"></i>Prijs nu</span>
+      <span><i class="sw" style="background:var(--color-ok)"></i>Cyclusbodem</span>
+    </div>
+    <div class="cy-chart" id="bz-chart"></div>
+    <div class="cy-tw">
+      <table class="bz-table">
+        <thead><tr><th></th><th>Model</th><th class="r">Zone</th><th class="r">Gewicht</th></tr></thead>
+        <tbody id="bz-models"><tr><td colspan="4" class="cy-sub">laden…</td></tr></tbody>
+      </table>
+    </div>
+
+    <h3 class="fut-h">Kapitulatiesignalen nu</h3>
+    <p class="cy-note">Bij de bodems van 2015, 2018 en 2022 stonden de meeste van deze signalen tegelijk aan. Hoe meer groen, hoe meer de markt op een echte capitulatie lijkt. Gaat een signaal aan of uit, dan kan je een ntfy-melding krijgen, ook met de app dicht (zie <a href="#alerts">Alerts</a>).</p>
+    <div class="ind-tiles" id="bz-sig"></div>
+
+    <h3 class="fut-h">Fear &amp; Greed: nu vs eerdere dips</h3>
+    <p class="cy-note">Elke dip sinds februari 2018 (begin van de index) waarbij BTC het laagste punt in ±45 dagen bereikte, minstens 20% onder de top van de 120 dagen ervoor. Per dip: de laagste Fear &amp; Greed-score rond die dag (±7 dagen), het gemiddelde en het aantal dagen extreme angst (onder 25) in de 30 dagen ervoor, en of het een bodem werd (geen lagere koers in de 180 dagen erna).</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Fear &amp; Greed nu</div><div class="cy-num" id="bz-fg-now">—</div><div class="cy-sub" id="bz-fg-now-sub">laden…</div></div>
+      <div><div class="cy-lbl">Laagste 7 dagen · gem. 30 dagen</div><div class="cy-num" id="bz-fg-7">—</div><div class="cy-sub" id="bz-fg-7-sub">—</div></div>
+      <div><div class="cy-lbl">Dagen extreme angst (30 d)</div><div class="cy-num" id="bz-fg-xf">—</div><div class="cy-sub" id="bz-fg-xf-sub">—</div></div>
+      <div><div class="cy-lbl">Bij dips die bodem werden</div><div class="cy-num" id="bz-fg-held">—</div><div class="cy-sub" id="bz-fg-held-sub">—</div></div>
+    </div>
+    <p class="cy-sub" id="bz-fg-take"></p>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:var(--color-ok)"></i>Werd bodem</span>
+      <span><i class="sw" style="background:var(--color-bad)"></i>Daarna nog lager</span>
+      <span><i class="sw ring bodem"></i>Houdt tot nu (nog geen 180 dagen)</span>
+      <span><i class="sw" style="background:var(--color-fg)"></i>Nu</span>
+      <span><i class="sw bear"></i>Extreme angst</span>
+    </div>
+    <div class="cy-chart" id="bz-fg-chart"></div>
+    <div class="cy-tw">
+      <table>
+        <thead><tr><th>Dip</th><th class="r">Prijs</th><th class="r">Daling</th><th class="r">F&amp;G laagst</th><th class="r">Gem. 30 d</th><th class="r">Dagen &lt;25</th><th class="r">+90 dagen</th><th>Bodem?</th></tr></thead>
+        <tbody id="bz-fg-dips"><tr><td colspan="8" class="cy-sub">laden…</td></tr></tbody>
+      </table>
+    </div>
+
+    <h3 class="fut-h">Miner stress</h3>
+    <p class="cy-note">Miners verkopen hun BTC om stroom te betalen. Zakt de prijs onder hun kostprijs, dan schakelen zwakke miners uit en verkopen ze reserves: de hashrate daalt (hash ribbons: 30-daags gemiddelde onder het 60-daagse). Dat viel samen met de bodems van 2018, 2020 en 2022. Kostprijs = stroomverbruik van het netwerk ÷ BTC die per dag gedolven wordt.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Stroomkost per BTC</div><div class="cy-num" id="bz-cost">—</div><div class="cy-sub" id="bz-cost-sub">laden…</div></div>
+      <div><div class="cy-lbl">Hashprice</div><div class="cy-num" id="bz-hp">—</div><div class="cy-sub" id="bz-hp-sub">USD per PH/s per dag</div></div>
+      <div><div class="cy-lbl">Hashrate (7 dagen)</div><div class="cy-num" id="bz-hr">—</div><div class="cy-sub" id="bz-hr-sub">—</div></div>
+      <div><div class="cy-lbl">Moeilijkheid</div><div class="cy-num" id="bz-diff">—</div><div class="cy-sub" id="bz-diff-sub">—</div></div>
+    </div>
+    <div class="dca-form">
+      <label>Gemiddelde efficiëntie (J/TH) <input id="bz-jth" type="number" min="5" max="60" step="1" inputmode="decimal"></label>
+      <label>Stroomprijs ($/kWh) <input id="bz-kwh" type="number" min="0.01" max="0.2" step="0.005" inputmode="decimal"></label>
+    </div>
+    <div class="cy-legend">
+      <span><i class="sw" style="background:var(--color-warn)"></i>Hashrate 30 dagen</span>
+      <span><i class="sw" style="background:#5b8def"></i>Hashrate 60 dagen</span>
+      <span><i class="sw bear"></i>Miner-kapitulatie (30D onder 60D)</span>
+    </div>
+    <div class="cy-chart" id="bz-hr-chart"></div>
+
+    <h3 class="fut-h">Liquidaties (geschatte kaart)</h3>
+    <p class="cy-note">Hefboomposities worden gedwongen gesloten als de prijs hun liquidatieprijs raakt. Grote clusters long-liquidaties onder de prijs werken als magneet: een daling erheen versnelt door gedwongen verkopen, en daarna is de markt "schoon". Model op basis van 4-uurscandles van Hyperliquid (90 dagen): elke candle opent posities met 3× tot 100× hefboom; posities waarvan de liquidatieprijs al geraakt is, vallen weg. De cluster wordt gezocht vanaf 5% onder de prijs (de clusters vlak onder de prijs zijn 50–100×-posities die bij elke schommeling verdwijnen). Een schatting, geen echte orderdata.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Grootste long-cluster</div><div class="cy-num" id="bz-lq">—</div><div class="cy-sub" id="bz-lq-sub">laden…</div></div>
+      <div><div class="cy-lbl">Funding (7 dagen, per jaar)</div><div class="cy-num" id="bz-fund">—</div><div class="cy-sub" id="bz-fund-sub">—</div></div>
+      <div><div class="cy-lbl">Open interest (Hyperliquid)</div><div class="cy-num" id="bz-oi">—</div><div class="cy-sub" id="bz-oi-sub">—</div></div>
+    </div>
+    <div class="cy-legend">
+      <span><i class="sw" style="background:var(--color-bad)"></i>Long-liquidaties (gedwongen verkopen)</span>
+      <span><i class="sw" style="background:var(--color-ok)"></i>Short-liquidaties (gedwongen aankopen)</span>
+    </div>
+    <div class="cy-chart" id="bz-liq-chart"></div>
+
+    <h3 class="fut-h">Realized price &amp; MVRV</h3>
+    <p class="cy-note">De realized price is de gemiddelde prijs waartegen alle BTC voor het laatst verplaatst zijn: de kostprijs van de hele markt. MVRV = prijs ÷ realized price. Onder 1 staat de gemiddelde houder op verlies; daar vielen de bodems van 2015, 2018 en 2022 (Coin Metrics).</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">Realized price</div><div class="cy-num" id="bz-rp">—</div><div class="cy-sub" id="bz-rp-sub">laden…</div></div>
+      <div><div class="cy-lbl">MVRV nu</div><div class="cy-num" id="bz-mvrv">—</div><div class="cy-sub">Bodemzone onder 1</div></div>
+      <div><div class="cy-lbl">MVRV bij eerdere bodems</div><div class="cy-sub fut-big" id="bz-mvrv-hist">—</div></div>
+    </div>
+    <div class="cy-chart" id="bz-mvrv-chart"></div>
+    <span data-draw="bodem" hidden></span>
+  </section>
 
   <section class="cy-card wma-hero" id="wma">
     <div class="wma-main">
@@ -541,6 +671,10 @@ window.dash = (() => {
     <details class="al-tg">
       <summary>Wekelijks 200WMA-rapport (ook met de app dicht)</summary>
       <p class="cy-note">Elke maandag rond 01:15 (Belgische tijd) berekent GitHub het nieuwe 200-weeks gemiddelde en stuurt het naar je ntfy-onderwerp. Eenmalig instellen in je repo: Settings → Secrets and variables → Actions → New repository secret, naam <b>NTFY_TOPIC</b>, waarde je onderwerp. Testen kan via Actions → "Wekelijks 200WMA naar ntfy" → Run workflow.</p>
+    </details>
+    <details class="al-tg">
+      <summary>Bodemsignalen bij elke verandering (ook met de app dicht)</summary>
+      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de zeven kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen en 10+ dagen extreme angst in een maand. Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
     </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>
@@ -1079,6 +1213,7 @@ window.hub = (() => {
       S.fng = j.data.map((d) => ({ t: +d.timestamp * 1000, v: +d.value, cls: d.value_classification })).sort((a, b) => a.t - b.t);
     } catch (e) { console.warn(e); setText('fng-now-lbl', 'Niet bereikbaar'); }
     renderAll();
+    window.dispatchEvent(new Event('btcfng'));
   };
 
   const loadMem = async () => {
@@ -1469,6 +1604,7 @@ window.hub = (() => {
     setText('pl-exp', d3.format('.2f')(a));
     setText('pl-fair', usd(Math.round(fair(now)))); setText('pl-pos', `Prijs ${pct(P / fair(now) - 1)} t.o.v. de trendlijn`);
     setText('pl-floor', usd(Math.round(floor(now)))); setText('pl-ceil', usd(Math.round(ceil(now))));
+    window.btcPL = { floor: floor(now), fair: fair(now) };
     setText('pl-29', `${usd(Math.round(fair(tTop) / 1000) * 1000)} (trend) · ${usd(Math.round(ceil(tTop) / 1000) * 1000)} (plafond)`);
     const { W, H, svg } = frame(el, (el.clientWidth || 600) < 520 ? 300 : 380);
     const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26;
@@ -1667,7 +1803,7 @@ window.hub = (() => {
     if (document.hidden || Date.now() - lastRefresh < 5 * 60000) return;
     lastRefresh = Date.now(); loadDaily(); loadFng(); loadMem(); loadAlts();
   });
-  return { state: S };
+  return { state: S, frame, timeAxis, timeHover };
 })();
 </script>
 
@@ -1818,6 +1954,561 @@ window.hub = (() => {
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
   load();
   setInterval(load, 15 * 60000);
+})();
+</script>
+
+<script>
+// ---- Bodemzone 2026: acht modellen, kapitulatiesignalen, miner stress, liquidaties, MVRV ----
+// Bronnen (gratis, zonder sleutel, met CORS): Coin Metrics community (prijs, MVRV, hashrate),
+// mempool.space (hashrate, fees, moeilijkheid), Hyperliquid (funding, open interest, 4u-candles).
+window.bodem = (() => {
+  const DAY = 864e5;
+  const M = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const $ = (id) => document.getElementById(id);
+  const setText = (id, t) => { const el = $(id); if (el) el.textContent = t; };
+  const usd = (v) => cy.usd(v);
+  const r500 = (v) => '$' + d3.format(',.0f')(Math.round(v / 500) * 500);
+  const kS = (v) => '$' + d3.format('.3~s')(v);
+  const nlF = (c) => ({ 'Extreme Fear': 'Extreme angst', Fear: 'Angst', Neutral: 'Neutraal', Greed: 'Hebzucht', 'Extreme Greed': 'Extreme hebzucht' }[c] || c);
+  const pct = (v) => d3.format('+.0%')(v);
+  const mon = (t) => { const d = new Date(t); return `${M[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+  const dayS = (t) => { const d = new Date(t); return `${d.getUTCDate()} ${M[d.getUTCMonth()]}`; };
+  const json = async (u, opt) => { const r = await fetch(u, { cache: 'no-store', ...opt }); if (!r.ok) throw new Error(u + ' ' + r.status); return r.json(); };
+  const hl = (body) => json('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const REWARD = 3.125;          // blokbeloning tot halving 5 (2028)
+  const D = { cm: null, hr: null, fees: null, diff: null, hl: null, candles: null, funding: null };
+
+  const CFG_KEY = 'btcBodemCfg.v1';
+  const DEF = { jth: 22, kwh: 0.05, off: {} };
+  const cfg = (() => { try { return { ...DEF, ...JSON.parse(localStorage.getItem(CFG_KEY) || '{}') }; } catch (e) { return { ...DEF }; } })();
+  const saveCfg = () => { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) { /* geen opslag */ } };
+
+  // ---- data ----
+  const daily = () => (window.hub && hub.state.daily ? hub.state.daily.rows : null);
+  const price = () => window.btcLive || (daily() ? daily()[daily().length - 1].close : null) || (D.hl ? D.hl.mark : null) || (D.cm ? D.cm[D.cm.length - 1].p : null);
+
+  const loadCm = async () => {
+    try {
+      const j = await json('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur,HashRate&frequency=1d&page_size=10000&start_time=2013-01-01');
+      D.cm = j.data.map((d) => ({ t: Date.parse(d.time), p: +d.PriceUSD, mvrv: +d.CapMVRVCur, eh: +d.HashRate / 1e6 })).filter((d) => d.p > 0 && d.mvrv > 0);
+    } catch (e) { console.warn(e); }
+    render();
+  };
+  const loadMiners = async () => {
+    try {
+      const j = await json('https://mempool.space/api/v1/mining/hashrate/1y');
+      D.hr = j.hashrates.map((h) => ({ t: h.timestamp * 1000, eh: h.avgHashrate / 1e18 })).filter((h) => h.eh > 0);
+    } catch (e) { console.warn(e); }
+    try { const f = await json('https://mempool.space/api/v1/mining/reward-stats/144'); D.fees = +f.totalFee / 1e8; } catch (e) { console.warn(e); }
+    try { D.diff = await json('https://mempool.space/api/v1/difficulty-adjustment'); } catch (e) { console.warn(e); }
+    render();
+  };
+  const loadDeriv = async () => {
+    const now = Date.now();
+    try {
+      const m = await hl({ type: 'metaAndAssetCtxs' });
+      const i = m[0].universe.findIndex((u) => u.name === 'BTC');
+      const c = m[1][i];
+      D.hl = { funding: +c.funding, oi: +c.openInterest, mark: +c.markPx, vol: +c.dayNtlVlm };
+    } catch (e) { console.warn(e); }
+    try {
+      const c = await hl({ type: 'candleSnapshot', req: { coin: 'BTC', interval: '4h', startTime: now - 90 * DAY, endTime: now } });
+      D.candles = c.map((k) => ({ t: k.t, h: +k.h, l: +k.l, c: +k.c, v: +k.v })).filter((k) => k.h > 0);
+    } catch (e) { console.warn(e); }
+    try {
+      const f = await hl({ type: 'fundingHistory', coin: 'BTC', startTime: now - 14 * DAY });
+      D.funding = f.map((x) => ({ t: x.time, r: +x.fundingRate }));
+    } catch (e) { console.warn(e); }
+    render();
+  };
+
+  // ---- berekeningen ----
+  const w200 = () => {
+    const rows = daily();
+    if (rows && rows[rows.length - 1].w200) return rows[rows.length - 1].w200;
+    if (D.cm) { const wk = D.cm.filter((d) => new Date(d.t).getUTCDay() === 0).map((d) => d.p); if (wk.length >= 200) return d3.mean(wk.slice(-200)); }
+    return null;
+  };
+  const realized = () => {
+    if (!D.cm || !D.cm.length) return null;
+    const last = D.cm[D.cm.length - 1], rp = last.p / last.mvrv, P = price() || last.p;
+    return { rp, mvrv: P / rp, t: last.t };
+  };
+  // MVRV op elke cyclusbodem (laagste MVRV binnen 45 dagen rond de bodemdatum)
+  const bottomMvrv = () => {
+    const ev = cy.rows(); if (!D.cm || !ev) return [];
+    return ev.filter((e) => e.kind === 'bodem' && e.cycle >= 1).map((e) => {
+      const w = D.cm.filter((d) => Math.abs(d.t - e.t) < 45 * DAY);
+      const m = d3.least(w, (d) => d.mvrv);
+      return m ? { y: e.t.getUTCFullYear(), v: m.mvrv } : null;
+    }).filter(Boolean);
+  };
+  const hrSeries = () => D.hr && D.hr.length > 90 ? D.hr : (D.cm ? D.cm.filter((d) => d.t > Date.now() - 400 * DAY && d.eh > 0).map((d) => ({ t: d.t, eh: d.eh })) : null);
+  const ribbons = () => {
+    const s = hrSeries(); if (!s || s.length < 70) return null;
+    const out = s.map((r, i) => ({
+      t: r.t, eh: r.eh,
+      a30: i >= 29 ? d3.mean(s.slice(i - 29, i + 1), (q) => q.eh) : null,
+      a60: i >= 59 ? d3.mean(s.slice(i - 59, i + 1), (q) => q.eh) : null,
+    }));
+    const last = out[out.length - 1];
+    let since = null;   // hoe lang de huidige toestand al duurt
+    for (let i = out.length - 1; i >= 0 && out[i].a60; i--) { if ((out[i].a30 < out[i].a60) !== (last.a30 < last.a60)) break; since = out[i].t; }
+    return { rows: out, last, cap: last.a30 < last.a60, since, now7: d3.mean(s.slice(-7), (q) => q.eh) };
+  };
+  const minerCost = () => {
+    const rb = ribbons(); if (!rb) return null;
+    const eh = rb.now7;
+    const btcDay = 144 * REWARD + (D.fees != null ? D.fees : 3);
+    const kwhDay = eh * 1e6 * cfg.jth * 24 / 1000;          // EH/s → TH/s × J/TH = W → kWh per dag
+    const cost = kwhDay * cfg.kwh / btcDay;
+    const P = price();
+    return { cost, eh, btcDay, hashprice: P ? btcDay * P / (eh * 1000) : null };
+  };
+  const funding7 = () => {
+    if (!D.funding || !D.funding.length) return null;
+    const w = D.funding.filter((f) => f.t > Date.now() - 7 * DAY);
+    return w.length ? d3.mean(w, (f) => f.r) * 24 * 365 : null;   // uurtarief → per jaar
+  };
+
+  // Geschatte liquidatiekaart
+  const liqMap = () => {
+    const C = D.candles, P = price(); if (!C || C.length < 30 || !P) return null;
+    const tiers = [[3, 0.1], [5, 0.15], [10, 0.25], [25, 0.25], [50, 0.15], [100, 0.1]], mm = 0.005, tau = 30 * DAY, tEnd = C[C.length - 1].t;
+    let longs = [], shorts = [];
+    C.forEach((c) => {
+      longs = longs.filter((q) => c.l > q.px);
+      shorts = shorts.filter((q) => c.h < q.px);
+      const p = (c.h + c.l + c.c) / 3, n = c.v * p * Math.exp(-(tEnd - c.t) / tau);
+      tiers.forEach(([L, w]) => {
+        longs.push({ px: p * (1 - 1 / L + mm), amt: n * w / 2 });
+        shorts.push({ px: p * (1 + 1 / L - mm), amt: n * w / 2 });
+      });
+    });
+    const bw = Math.max(50, Math.round(P * 0.005 / 50) * 50), lo = P * 0.6, hi = P * 1.4;
+    const nb = Math.ceil((hi - lo) / bw), bins = d3.range(nb).map((i) => ({ px: lo + i * bw, long: 0, short: 0 }));
+    const put = (arr, key) => arr.forEach((q) => { const i = Math.floor((q.px - lo) / bw); if (i >= 0 && i < nb) bins[i][key] += q.amt; });
+    put(longs, 'long'); put(shorts, 'short');
+    const sm = bins.map((b, i) => d3.sum(bins.slice(Math.max(0, i - 2), i + 3), (q) => q.long));
+    let ip = -1;
+    bins.forEach((b, i) => { if (b.px >= P * 0.65 && b.px + bw <= P * 0.95 && (ip < 0 || sm[i] > sm[ip])) ip = i; });   // vanaf 5% onder de prijs: de diepere magneet
+    let cluster = null;
+    if (ip >= 0 && sm[ip] > 0) {
+      let a = ip, b = ip;
+      while (a > 0 && sm[a - 1] >= sm[ip] * 0.5) a--;
+      while (b < nb - 1 && bins[b + 1].px + bw <= P * 0.95 && sm[b + 1] >= sm[ip] * 0.5) b++;
+      cluster = { lo: bins[a].px, hi: bins[b].px + bw, peak: bins[ip].px + bw / 2, amt: d3.sum(bins.slice(a, b + 1), (q) => q.long) };
+    }
+    const totLong = d3.sum(bins, (q) => q.long);
+    const near10 = d3.sum(bins.filter((q) => q.px >= P * 0.9 && q.px < P), (q) => q.long);
+    return { bins, bw, cluster, P, share10: totLong ? near10 / totLong : 0, shareCl: cluster && totLong ? cluster.amt / totLong : 0 };
+  };
+
+  // Historisch tijdvenster: top → bodem en halving → bodem van cyclus 1–3, toegepast op cyclus 4
+  const timing = () => {
+    const ev = cy.rows(); if (!ev) return null;
+    const tb = [], hb = [];
+    [1, 2, 3].forEach((c) => {
+      const e = ev.filter((q) => q.cycle === c);
+      const top = d3.greatest(e.filter((q) => q.kind === 'top'), (q) => q.price);
+      const h = e.find((q) => q.kind === 'halving');
+      const low = top && d3.least(e.filter((q) => q.kind === 'bodem' && q.t > top.t), (q) => q.price);
+      if (top && low) tb.push(low.t - top.t);
+      if (h && low) hb.push(low.t - h.t);
+    });
+    const top4 = ev.find((q) => q.id === 'top4'), h4 = ev.find((q) => q.id === 'halving4');
+    if (!top4 || !h4 || !tb.length) return null;
+    const w1 = [+top4.t + d3.min(tb), +top4.t + d3.max(tb)], w2 = [+h4.t + d3.min(hb), +h4.t + d3.max(hb)];
+    return { w1, w2, a: Math.min(w1[0], w2[0]), b: Math.max(w1[1], w2[1]), tbM: tb.map((x) => x / (30.44 * DAY)), hbM: hb.map((x) => x / (30.44 * DAY)) };
+  };
+
+  // ---- de acht modellen ----
+  const models = () => {
+    const P = price(); if (!P) return [];
+    const out = [], ev = cy.rows() || [];
+    const cyc = dash.data('cycles');
+    const TOP = window.BTC_TOP || 126080, LOW = window.BTC_LOW || 57700;
+    if (cyc.status === 'ok') {
+      const fr = ['Cyclus 1', 'Cyclus 2', 'Cyclus 3'].map((n) => cyc.data.find((c) => c.cyclus === n)).filter(Boolean).map((c) => 1 + c.daling);
+      if (fr.length === 3) {
+        const lin = fr[2] + (fr[2] - fr[0]) / 2, geo = fr[2] * fr[2] / fr[1];
+        out.push({ id: 'cyc', name: 'Halvingcyclus: diepte', lo: TOP * Math.min(lin, geo), hi: TOP * Math.max(lin, geo), w: 0.5,
+          why: `Dalingen van top naar bodem: ${fr.map((f) => d3.format('.0%')(f - 1)).join(', ')}. De trend doorgetrokken geeft ${d3.format('.0%')(Math.max(lin, geo) - 1)} tot ${d3.format('.0%')(Math.min(lin, geo) - 1)} onder de top. Half gewicht: sinds de ETF's zijn de dalingen kleiner.` });
+      }
+    }
+    const w = w200();
+    if (w) out.push({ id: 'wma', name: '200-weeks gemiddelde', lo: w * 0.9, hi: w, w: 1,
+      why: `200WMA nu ${usd(Math.round(w))}. De bodems van 2015, 2018, 2020 en juni 2026 lagen op 0,90–1,00× deze lijn (2022: 0,66×).` });
+    const rz = realized();
+    if (rz) {
+      const bm = bottomMvrv();
+      out.push({ id: 'rp', name: 'Realized price (MVRV)', lo: rz.rp * 0.9, hi: rz.rp * 1.1, w: 1,
+        why: `Gemiddelde kostprijs van alle BTC: ${usd(Math.round(rz.rp))}. MVRV bij de bodems: ${bm.map((b) => `${d3.format('.2f')(b.v)} (${b.y})`).join(', ') || '—'}; die stijgt elke cyclus, dus 0,9–1,1×.` });
+    }
+    const mc = minerCost();
+    if (mc) out.push({ id: 'miner', name: 'Miner-kostprijs', lo: mc.cost * 0.9, hi: mc.cost * 1.1, w: 1,
+      why: `Stroomkost per gedolven BTC bij ${d3.format('.1f')(mc.eh)} EH/s, ${cfg.jth} J/TH en $${cfg.kwh}/kWh: ${usd(Math.round(mc.cost))}. Bodems vallen als miners onder water staan.` });
+    const lq = liqMap();
+    if (lq && lq.cluster) out.push({ id: 'liq', name: 'Liquidatiecluster', lo: lq.cluster.lo, hi: lq.cluster.hi, w: 0.75,
+      why: `Grootste geschatte cluster long-liquidaties onder de prijs (${d3.format('.0%')(lq.shareCl)} van alle longs in beeld). Bij paniek trekt de prijs daar vaak naartoe.` });
+    out.push({ id: 'dbl', name: 'Retest cyclusbodem', lo: LOW * 0.97, hi: LOW * 1.03, w: 1,
+      why: `Dubbele bodem rond de cyclusbodem van ${usd(LOW)} (${(ev.find((e) => e.id === 'low4') || {}).date || 'juni 2026'}), zoals juni → november 2022 maar zonder lagere low.` });
+    if (window.btcZones) {
+      const z = window.btcZones(P)[0];
+      out.push({ id: 'fib', name: 'Hogere bodem (Fibonacci)', lo: z.lo, hi: z.hi, w: 1,
+        why: `0,618–0,786 terugval van het herstel ${usd(LOW)} → ${usd(Math.round(Math.max(window.btcRallyHigh || 0, P)))}: een hogere bodem boven die van juni.` });
+    }
+    if (window.btcPL) out.push({ id: 'pl', name: 'Power Law-vloer', lo: window.btcPL.floor, hi: window.btcPL.floor * 1.15, w: 0.5,
+      why: `Lange-termijnvloer (${usd(Math.round(window.btcPL.floor))}) die elke bodem sinds 2013 opving. Half gewicht: de bodems blijven steeds verder boven de vloer.` });
+    return out;
+  };
+
+  // Elk model = gelijkmatige zone, zacht gemaakt met ±3%; samen een gewogen kansverdeling.
+  const erf = (x) => { const s = Math.sign(x); x = Math.abs(x); const t = 1 / (1 + 0.3275911 * x); return s * (1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x)); };
+  const combine = (ms) => {
+    const act = ms.filter((m) => !cfg.off[m.id] && m.hi > m.lo);
+    if (!act.length) return null;
+    const lo = d3.min(act, (m) => m.lo) * 0.85, hi = d3.max(act, (m) => m.hi) * 1.1, step = (hi - lo) / 500;
+    const xs = d3.range(lo, hi, step);
+    const dens = xs.map((x) => d3.sum(act, (m) => { const s = 0.03 * (m.lo + m.hi) / 2 * Math.SQRT2; return m.w * 0.5 * (erf((x - m.lo) / s) - erf((x - m.hi) / s)) / (m.hi - m.lo); }));
+    const tot = d3.sum(dens), pdf = dens.map((d) => d / tot), ip = d3.maxIndex(pdf);
+    const hdr = (mass) => {
+      const sorted = pdf.slice().sort((a, b) => b - a); let acc = 0, th = 0;
+      for (const v of sorted) { acc += v; if (acc >= mass) { th = v; break; } }
+      let a = ip, b = ip;
+      while (a > 0 && pdf[a - 1] >= th) a--;
+      while (b < pdf.length - 1 && pdf[b + 1] >= th) b++;
+      return [xs[a], xs[b] + step];
+    };
+    return { xs, pdf, step, peak: xs[ip] + step / 2, core: hdr(0.5), wide: hdr(0.8), act };
+  };
+
+  // ---- tekenen ----
+  const drawRange = (ms, cb) => {
+    const el = $('bz-chart'); if (!el || !ms.length || !window.hub || !hub.frame) return;
+    const P = price(), LOW = window.BTC_LOW || 57700;
+    const W0 = el.clientWidth || 600, rowH = 30, densH = 90, mt = 8, mb = 26;
+    const H = mt + densH + 12 + ms.length * rowH + mb;
+    const { W, svg } = hub.frame(el, H);
+    const ml = 8, mr = 8;
+    const x = d3.scaleLinear([Math.min(d3.min(ms, (m) => m.lo), LOW) * 0.94, Math.max(d3.max(ms, (m) => m.hi), P) * 1.04], [ml, W - mr]).nice();
+    const ticks = x.ticks(W0 < 520 ? 5 : 9);
+    svg.append('g').selectAll('line').data(ticks).join('line').attr('class', 'cy-gl').attr('x1', x).attr('x2', x).attr('y1', mt).attr('y2', H - mb);
+    svg.append('g').selectAll('text').data(ticks).join('text').attr('class', 'cy-tick').attr('x', x).attr('y', H - 8).attr('text-anchor', 'middle').text((d) => '$' + d3.format('~s')(d));
+    const yb = mt + densH;
+    if (cb) {
+      svg.append('rect').attr('class', 'bz-wide').attr('x', x(cb.wide[0])).attr('width', x(cb.wide[1]) - x(cb.wide[0])).attr('y', mt).attr('height', H - mb - mt);
+      svg.append('rect').attr('class', 'bz-core').attr('x', x(cb.core[0])).attr('width', x(cb.core[1]) - x(cb.core[0])).attr('y', mt).attr('height', H - mb - mt);
+      const yd = d3.scaleLinear([0, d3.max(cb.pdf)], [yb, mt + 14]);
+      const pts = cb.xs.map((v, i) => [v + cb.step / 2, cb.pdf[i]]).filter((p) => p[0] >= x.domain()[0] && p[0] <= x.domain()[1]);
+      svg.append('path').attr('class', 'bz-dens').attr('d', d3.area((p) => x(p[0]), yb, (p) => yd(p[1])).curve(d3.curveBasis)(pts));
+      svg.append('text').attr('class', 'cy-lab').attr('x', x(cb.peak)).attr('y', mt + 10).attr('text-anchor', 'middle').text(`${r500(cb.core[0])}–${r500(cb.core[1])}`);
+    }
+    svg.append('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', yb).attr('y2', yb);
+    const g = svg.append('g').selectAll('g').data(ms).join('g').attr('transform', (m, i) => `translate(0,${yb + 12 + i * rowH})`);
+    g.append('rect').attr('class', (m) => 'bz-bar' + (cfg.off[m.id] ? ' off' : '')).attr('x', (m) => x(m.lo)).attr('width', (m) => Math.max(3, x(m.hi) - x(m.lo))).attr('y', 14).attr('height', 9).attr('rx', 2)
+      .style('fill-opacity', (m) => cfg.off[m.id] ? null : 0.25 + 0.4 * m.w);
+    g.append('text').attr('class', (m) => 'bz-rowlab' + (cfg.off[m.id] ? ' off' : ''))
+      .attr('y', 10).attr('text-anchor', 'middle').text((m) => `${m.name} · ${kS(m.lo)}–${kS(m.hi)}`)
+      .attr('x', function (m) { const hw = this.getComputedTextLength() / 2 + 2; return Math.min(Math.max(x((m.lo + m.hi) / 2), ml + hw), W - mr - hw); });
+    const vline = (v, cls, lbl, anchor) => {
+      if (v < x.domain()[0] || v > x.domain()[1]) return;
+      svg.append('line').attr('class', cls).attr('x1', x(v)).attr('x2', x(v)).attr('y1', mt).attr('y2', H - mb);
+      if (anchor === 'start' && x(v) > W - mr - 70) anchor = 'end';
+      if (anchor === 'end' && x(v) < ml + 70) anchor = 'start';
+      svg.append('text').attr('class', 'cy-lab').attr('x', x(v) + (anchor === 'end' ? -4 : 4)).attr('y', yb - 4).attr('text-anchor', anchor).text(lbl);
+    };
+    vline(LOW, 'bz-low', `bodem ${kS(LOW)}`, 'end');
+    vline(P, 'bz-now', `nu ${kS(P)}`, 'start');
+  };
+
+  const renderTable = (ms) => {
+    const tb = $('bz-models'); if (!tb) return;
+    tb.replaceChildren();
+    ms.forEach((m) => {
+      const tr = tb.insertRow(); if (cfg.off[m.id]) tr.className = 'off';
+      const c0 = tr.insertCell(); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !cfg.off[m.id];
+      cb.setAttribute('aria-label', m.name + ' meetellen');
+      cb.addEventListener('change', () => { if (cb.checked) delete cfg.off[m.id]; else cfg.off[m.id] = true; saveCfg(); render(); });
+      c0.append(cb);
+      const c1 = tr.insertCell(); const b = document.createElement('div'); b.textContent = m.name; const s = document.createElement('div'); s.className = 'cy-sub'; s.textContent = m.why; c1.append(b, s);
+      const c2 = tr.insertCell(); c2.className = 'r'; c2.textContent = `${r500(m.lo)} – ${r500(m.hi)}`;
+      const c3 = tr.insertCell(); c3.className = 'r'; c3.textContent = m.w === 1 ? 'vol' : m.w === 0.5 ? 'half' : '¾';
+    });
+  };
+
+  const renderSignals = () => {
+    const box = $('bz-sig'); if (!box) return;
+    const P = price(), w = w200(), rz = realized(), rb = ribbons(), mc = minerCost(), f7 = funding7();
+    const fng = window.hub && hub.state.fng && hub.state.fng.length ? hub.state.fng[hub.state.fng.length - 1] : null;
+    const df = D.diff;
+    const sig = [
+      { name: 'Prijs onder 200WMA', ok: P && w ? P < w : null, val: P && w ? pct(P / w - 1) : '—', sub: w ? `200WMA ${usd(Math.round(w))}` : 'laden…' },
+      { name: 'MVRV onder 1', ok: rz ? rz.mvrv < 1 : null, val: rz ? d3.format('.2f')(rz.mvrv) : '—', sub: rz ? `Realized price ${usd(Math.round(rz.rp))}` : 'laden…' },
+      { name: 'Hash ribbons: kapitulatie', ok: rb ? rb.cap : null, val: rb ? pct(rb.last.a30 / rb.last.a60 - 1) : '—', sub: rb ? (rb.cap ? 'Miners schakelen uit' : 'Hashrate groeit') + (rb.since ? ` sinds ${dayS(rb.since)}` : '') : 'laden…' },
+      { name: 'Prijs onder miner-kostprijs', ok: P && mc ? P < mc.cost : null, val: P && mc ? pct(P / mc.cost - 1) : '—', sub: mc ? `Kostprijs ${usd(Math.round(mc.cost))}` : 'laden…' },
+      { name: 'Funding negatief (7 d)', ok: f7 != null ? f7 < 0 : null, val: f7 != null ? d3.format('+.1%')(f7) : '—', sub: f7 == null ? 'laden…' : f7 < 0 ? 'Shorts betalen longs: hefboom gespoeld' : 'Longs betalen shorts' },
+      { name: 'Extreme angst (F&G < 25)', ok: fng ? fng.v < 25 : null, val: fng ? String(fng.v) : '—', sub: fng ? nlF(fng.cls) : 'laden…' },
+      { name: 'Moeilijkheid daalt', ok: df ? (df.previousRetarget < 0 || (df.progressPercent > 50 && df.difficultyChange < 0)) : null,
+        val: df ? d3.format('+.1f')(df.progressPercent > 50 ? df.difficultyChange : df.previousRetarget) + '%' : '—',
+        sub: df ? `Vorige ${d3.format('+.1f')(df.previousRetarget)}%, volgende ±${d3.format('+.1f')(df.difficultyChange)}%` : 'laden…' },
+    ];
+    const known = sig.filter((s) => s.ok != null), on = known.filter((s) => s.ok).length;
+    box.replaceChildren();
+    const mk = (cls, lbl, num, sub) => {
+      const d = document.createElement('div'); d.className = 'ind' + (cls ? ' ' + cls : '');
+      const a = document.createElement('div'); a.className = 'cy-lbl'; a.textContent = lbl;
+      const b = document.createElement('div'); b.className = 'cy-num'; b.textContent = num;
+      const c = document.createElement('div'); c.className = 'cy-sub'; c.textContent = sub;
+      d.append(a, b, c); box.append(d);
+    };
+    mk(on >= 5 ? 'g' : on >= 3 ? 'y' : 'r', 'Kapitulatiescore', known.length ? `${on}/${known.length}` : '—',
+      !known.length ? 'laden…' : on >= 5 ? 'Lijkt op een echte capitulatie' : on >= 3 ? 'Deels: stress, nog geen volle capitulatie' : 'Weinig capitulatie: geen klassiek bodemmoment');
+    sig.forEach((s) => mk(s.ok ? 'g' : '', s.name, s.val, s.sub));
+    return { on, n: known.length };
+  };
+
+  const renderMiners = () => {
+    const mc = minerCost(), rb = ribbons(), P = price();
+    if (mc) {
+      setText('bz-cost', usd(Math.round(mc.cost)));
+      setText('bz-cost-sub', P ? `Prijs ${pct(P / mc.cost - 1)} t.o.v. de kostprijs · ${d3.format('.1f')(mc.btcDay)} BTC per dag` : '');
+      setText('bz-hp', mc.hashprice ? '$' + d3.format(',.1f')(mc.hashprice) : '—');
+    }
+    if (rb) {
+      setText('bz-hr', d3.format(',.0f')(rb.now7) + ' EH/s');
+      setText('bz-hr-sub', `30D ${pct(rb.last.a30 / rb.last.a60 - 1)} t.o.v. 60D · ${rb.cap ? 'kapitulatie' : 'herstel/groei'}`);
+    } else setText('bz-hr-sub', 'laden…');
+    if (D.diff) {
+      setText('bz-diff', d3.format('+.1f')(D.diff.previousRetarget) + '%');
+      setText('bz-diff-sub', `Vorige aanpassing · volgende verwacht ${d3.format('+.1f')(D.diff.difficultyChange)}% (${d3.format('.0f')(D.diff.progressPercent)}% van de periode)`);
+    }
+    // grafiek: hash ribbons, laatste 12 maanden
+    const el = $('bz-hr-chart'); if (!el || !rb || !hub.frame) return;
+    const rows = rb.rows.filter((r) => r.a60);
+    if (rows.length < 10) return;
+    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 220 : 260);
+    const ml = cy.measure(svg, '1,000') + 10, mr = 10, mt = 10, mb = 26;
+    const x = d3.scaleUtc([new Date(rows[0].t), new Date(rows[rows.length - 1].t)], [ml, W - mr]);
+    const y = d3.scaleLinear([d3.min(rows, (r) => Math.min(r.a30, r.a60)) * 0.97, d3.max(rows, (r) => Math.max(r.a30, r.a60)) * 1.03], [H - mb, mt]).nice();
+    const yt = y.ticks(5);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d3.format(',')(d));
+    // kapitulatieperiodes
+    const spans = []; let s0 = null;
+    rows.forEach((r, i) => { const cap = r.a30 < r.a60; if (cap && s0 == null) s0 = r.t; if ((!cap || i === rows.length - 1) && s0 != null) { spans.push([s0, r.t]); s0 = null; } });
+    svg.append('g').selectAll('rect').data(spans).join('rect').attr('class', 'bz-cap').attr('x', (d) => x(new Date(d[0]))).attr('width', (d) => Math.max(1, x(new Date(d[1])) - x(new Date(d[0])))).attr('y', mt).attr('height', H - mb - mt);
+    hub.timeAxis(svg, x, W, H);
+    const ln = (k) => d3.line((r) => x(new Date(r.t)), (r) => y(r[k]));
+    svg.append('path').attr('fill', 'none').style('stroke', '#5b8def').attr('stroke-width', 2).attr('d', ln('a60')(rows));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', 2).attr('d', ln('a30')(rows));
+    hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `30D ${d3.format(',.0f')(r.a30)} EH/s`, `60D ${d3.format(',.0f')(r.a60)} EH/s`]);
+  };
+
+  const renderDeriv = () => {
+    const lq = liqMap(), f7 = funding7();
+    if (lq && lq.cluster) {
+      setText('bz-lq', `${r500(lq.cluster.lo)}–${r500(lq.cluster.hi)}`);
+      setText('bz-lq-sub', `${pct(lq.cluster.peak / lq.P - 1)} onder de prijs · ${d3.format('.0%')(lq.share10)} van de longs ligt binnen 10%`);
+    } else setText('bz-lq-sub', D.candles ? 'Geen duidelijke cluster onder de prijs' : 'laden…');
+    if (f7 != null) {
+      setText('bz-fund', d3.format('+.1%')(f7));
+      setText('bz-fund-sub', f7 < 0 ? 'Negatief: shorts in de meerderheid, vaak rond bodems' : f7 > 0.15 ? 'Hoog: veel hefboom-longs (risico op flush)' : 'Neutraal tot licht positief');
+    }
+    if (D.hl) {
+      setText('bz-oi', d3.format(',.0f')(D.hl.oi) + ' BTC');
+      setText('bz-oi-sub', `${usd(Math.round(D.hl.oi * D.hl.mark / 1e6))} mln · huidige funding ${d3.format('+.1%')(D.hl.funding * 24 * 365)} per jaar`);
+    }
+    const el = $('bz-liq-chart'); if (!el || !lq || !hub.frame) return;
+    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 220 : 260);
+    const ml = 10, mr = 10, mt = 18, mb = 26;
+    const x = d3.scaleLinear([lq.bins[0].px, lq.bins[lq.bins.length - 1].px + lq.bw], [ml, W - mr]);
+    const y = d3.scaleLinear([0, d3.quantile(lq.bins.flatMap((b) => [b.long, b.short]).filter((v) => v > 0), 0.98) || 1], [H - mb, mt]).clamp(true);
+    if (lq.cluster) svg.append('rect').attr('class', 'bz-cl').attr('x', x(lq.cluster.lo)).attr('width', x(lq.cluster.hi) - x(lq.cluster.lo)).attr('y', mt).attr('height', H - mb - mt);
+    const bwPx = Math.max(1, x(lq.bins[0].px + lq.bw) - x(lq.bins[0].px) - 1);
+    svg.append('g').selectAll('rect').data(lq.bins.filter((b) => b.long > 0)).join('rect').attr('class', 'bz-liq-l').attr('x', (b) => x(b.px)).attr('width', bwPx).attr('y', (b) => y(b.long)).attr('height', (b) => y(0) - y(b.long));
+    svg.append('g').selectAll('rect').data(lq.bins.filter((b) => b.short > 0)).join('rect').attr('class', 'bz-liq-s').attr('x', (b) => x(b.px)).attr('width', bwPx).attr('y', (b) => y(b.short)).attr('height', (b) => y(0) - y(b.short));
+    const xt = x.ticks((el.clientWidth || 600) < 520 ? 4 : 8);
+    svg.append('g').selectAll('text').data(xt).join('text').attr('class', 'cy-tick').attr('x', x).attr('y', H - 8).attr('text-anchor', 'middle').text((d) => '$' + d3.format('~s')(d));
+    svg.append('line').attr('class', 'bz-now').attr('x1', x(lq.P)).attr('x2', x(lq.P)).attr('y1', mt - 6).attr('y2', H - mb);
+    svg.append('text').attr('class', 'cy-lab').attr('x', x(lq.P)).attr('y', mt - 8).attr('text-anchor', 'middle').text(`nu ${kS(lq.P)}`);
+    if (lq.cluster) svg.append('text').attr('class', 'cy-lab').attr('x', x((lq.cluster.lo + lq.cluster.hi) / 2)).attr('y', mt + 10).attr('text-anchor', 'middle').text('cluster');
+  };
+
+  const renderMvrv = () => {
+    const rz = realized(); if (!rz) { setText('bz-rp-sub', D.cm === null ? 'laden…' : 'niet bereikbaar'); return; }
+    const P = price();
+    setText('bz-rp', usd(Math.round(rz.rp)));
+    setText('bz-rp-sub', P ? `Prijs ${pct(P / rz.rp - 1)} erboven · stand ${new Date(rz.t).toISOString().slice(0, 10)}` : '');
+    setText('bz-mvrv', d3.format('.2f')(rz.mvrv));
+    const bm = bottomMvrv();
+    setText('bz-mvrv-hist', bm.map((b) => `${b.y}: ${d3.format('.2f')(b.v)}`).join(' · ') || '—');
+    const el = $('bz-mvrv-chart'); if (!el || !hub.frame) return;
+    const rows = D.cm.filter((d) => d.t >= Date.UTC(2014, 0, 1));
+    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 220 : 260);
+    const ml = cy.measure(svg, '4.5') + 10, mr = 10, mt = 10, mb = 26;
+    const x = d3.scaleUtc([new Date(rows[0].t), new Date(rows[rows.length - 1].t)], [ml, W - mr]);
+    const y = d3.scaleLinear([0.4, d3.max(rows, (r) => r.mvrv) * 1.05], [H - mb, mt]);
+    svg.append('rect').attr('class', 'bz-mvrv-low').attr('x', ml).attr('width', W - mr - ml).attr('y', y(1)).attr('height', y(0.4) - y(1));
+    const yt = [0.5, 1, 2, 3, 4].filter((v) => v <= y.domain()[1]);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', (d) => d === 1 ? 'cy-ref' : 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
+    hub.timeAxis(svg, x, W, H);
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.7).attr('stroke-width', 1.2).attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.mvrv))(rows));
+    hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `MVRV ${d3.format('.2f')(r.mvrv)}`, `Realized price ${usd(Math.round(r.p / r.mvrv))}`]);
+  };
+
+
+  // ---- Fear & Greed bij eerdere dips ----
+  const fngDips = () => {
+    const rows = daily() || (D.cm ? D.cm.map((d) => ({ t: Math.floor(d.t / DAY) * DAY, close: d.p })) : null), F = window.hub && hub.state.fng;
+    if (!rows || !F || !F.length) return null;
+    const di = (t) => Math.floor(t / DAY), fg = new Map(F.map((f) => [di(f.t), f.v]));
+    const f0 = di(F[0].t), N = rows.length, now = Date.now();
+    const pre30 = (d) => { const v = []; for (let k = 1; k <= 30; k++) if (fg.has(d - k)) v.push(fg.get(d - k)); return v; };
+    const minAround = (d, a, b) => { let m = null; for (let k = a; k <= b; k++) if (fg.has(d + k)) m = m == null ? fg.get(d + k) : Math.min(m, fg.get(d + k)); return m; };
+    const dips = [];
+    for (let i = 120; i < N; i++) {
+      const r = rows[i], d = di(r.t);
+      if (d < f0 + 30) continue;
+      let lowest = true;
+      for (let j = Math.max(0, i - 45); j <= Math.min(N - 1, i + 45) && lowest; j++) if (rows[j].close < r.close) lowest = false;
+      if (!lowest) continue;
+      let hi = 0; for (let j = i - 120; j <= i; j++) hi = Math.max(hi, rows[j].close);
+      const dd = r.close / hi - 1;
+      if (dd > -0.2) continue;
+      if (i > N - 8) continue;   // te vers: dat is "nu", niet een afgeronde dip
+      const pre = pre30(d), fut = rows.slice(i + 1, i + 181);
+      const newLow = fut.some((q) => q.close < r.close * 0.98);
+      const age = (now - r.t) / DAY;
+      dips.push({
+        t: r.t, p: r.close, dd, fmin: minAround(d, -7, 7), avg30: pre.length ? d3.mean(pre) : null, xf: pre.filter((v) => v < 25).length,
+        r90: i + 90 < N ? rows[i + 90].close / r.close - 1 : null,
+        state: newLow ? 'lager' : age >= 180 ? 'bodem' : 'open', fresh: i > N - 46,
+      });
+    }
+    const last = rows[N - 1], dN = di(last.t), P = price() || last.close;
+    let hi = 0; for (let j = Math.max(0, N - 121); j < N; j++) hi = Math.max(hi, rows[j].close);
+    const pre = pre30(dN + 1), fNow = F[F.length - 1];
+    const cur = { dd: Math.min(0, P / Math.max(hi, P) - 1), fmin: minAround(dN, -6, 1), avg30: pre.length ? d3.mean(pre) : null, xf: pre.filter((v) => v < 25).length, f: fNow };
+    return { dips, cur };
+  };
+
+  const renderFngDips = () => {
+    const res = fngDips(); if (!res) return;
+    const { dips, cur } = res;
+    const held = dips.filter((d) => d.state === 'bodem'), lower = dips.filter((d) => d.state === 'lager');
+    const med = (a, k) => a.length ? d3.median(a, (q) => q[k]) : null;
+    const f0 = (v) => v == null ? '—' : d3.format('.0f')(v);
+    setText('bz-fg-now', String(cur.f.v)); setText('bz-fg-now-sub', nlF(cur.f.cls));
+    setText('bz-fg-7', `${f0(cur.fmin)} · ${f0(cur.avg30)}`);
+    setText('bz-fg-7-sub', `Bodems: mediaan ${f0(med(held, 'fmin'))} · ${f0(med(held, 'avg30'))}`);
+    setText('bz-fg-xf', String(cur.xf)); setText('bz-fg-xf-sub', `Bodems: mediaan ${f0(med(held, 'xf'))} dagen`);
+    setText('bz-fg-held', f0(med(held, 'fmin')));
+    setText('bz-fg-held-sub', `Mediaan laagste score bij ${held.length} bodems; ${f0(med(lower, 'fmin'))} bij ${lower.length} dips die nog lager gingen`);
+    // vergelijking in woorden
+    const deeper = dips.filter((d) => d.fmin != null && cur.fmin != null && d.fmin <= cur.fmin).length;
+    const xfHeld = held.filter((d) => d.xf >= 10).length;
+    setText('bz-fg-take', cur.fmin == null ? '' :
+      `De laagste score van de afgelopen week (${cur.fmin}) is ${cur.fmin < 25 ? 'extreme angst' : 'geen extreme angst'}: bij ${deeper} van de ${dips.length} dips zakte de index even diep of dieper. ` +
+      `${xfHeld} van de ${held.length} bodems kwamen na minstens 10 dagen extreme angst in een maand (nu ${cur.xf}). ` +
+      `Let op: ook dips die nog lager gingen hadden vaak extreme angst (juni 2022: 30 dagen). Lage angst is een voorwaarde voor een bodem, geen bewijs.`);
+    // tabel, nieuwste bovenaan
+    const tb = $('bz-fg-dips');
+    if (tb) {
+      tb.replaceChildren();
+      const add = (cells, cls) => { const tr = tb.insertRow(); if (cls) tr.className = cls; cells.forEach(([t, c]) => { const td = tr.insertCell(); td.textContent = t; if (c) td.className = c; }); };
+      add([['Nu', ''], [usd(Math.round(price() || 0)), 'r'], [d3.format('.0%')(cur.dd), 'r'], [f0(cur.fmin), 'r' + (cur.fmin < 25 ? ' good' : '')], [f0(cur.avg30), 'r'], [String(cur.xf), 'r'], ['—', 'r'], ['?', '']], 'bz-now-row');
+      dips.slice().reverse().forEach((d) => add([
+        [`${dayS(d.t)} ${new Date(d.t).getUTCFullYear()}${d.fresh ? ' (voorlopig)' : ''}`, ''], [usd(Math.round(d.p)), 'r'], [d3.format('.0%')(d.dd), 'r'],
+        [f0(d.fmin), 'r' + (d.fmin < 25 ? ' good' : '')], [f0(d.avg30), 'r'], [String(d.xf), 'r'],
+        [d.r90 == null ? '—' : d3.format('+.0%')(d.r90), 'r' + (d.r90 > 0 ? ' good' : d.r90 < 0 ? ' bad' : '')],
+        [d.state === 'bodem' ? 'Ja' : d.state === 'lager' ? 'Nee, daarna lager' : 'Houdt tot nu', d.state === 'bodem' ? 'good' : d.state === 'lager' ? 'bad' : ''],
+      ]));
+    }
+    // spreidingsgrafiek: daling (x) vs laagste F&G (y)
+    const el = $('bz-fg-chart'); if (!el || !hub.frame) return;
+    const pts = dips.filter((d) => d.fmin != null);
+    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 260 : 300);
+    const ml = cy.measure(svg, '100') + 10, mr = 14, mt = 14, mb = 30;
+    const x = d3.scaleLinear([Math.min(-0.7, d3.min(pts, (d) => d.dd) - 0.03), 0], [ml, W - mr]);
+    const y = d3.scaleLinear([0, Math.max(60, (d3.max(pts, (d) => d.fmin) || 0) + 5, (cur.fmin || 0) + 10)], [H - mb, mt]);
+    svg.append('rect').attr('class', 'fng-fear').attr('x', ml).attr('width', W - mr - ml).attr('y', y(25)).attr('height', y(0) - y(25));
+    const yt = y.ticks(5), xt = x.ticks(W < 520 ? 4 : 7);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+    svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
+    svg.append('g').selectAll('text').data(xt).join('text').attr('class', 'cy-tick').attr('x', x).attr('y', H - 14).attr('text-anchor', 'middle').text((d) => d3.format('.0%')(d));
+    svg.append('text').attr('class', 'cy-tick').attr('x', W - mr).attr('y', H - 1).attr('text-anchor', 'end').text('daling vanaf de top van 120 dagen →');
+    svg.append('text').attr('class', 'cy-tick').attr('x', ml + 4).attr('y', mt - 2).text('laagste F&G');
+    const all = pts.map((d) => ({ ...d, now: false })).concat(cur.fmin != null ? [{ ...cur, now: true, t: Date.now(), p: price() }] : []);
+    svg.append('g').selectAll('circle').data(all).join('circle').attr('r', (d) => d.now ? 7 : 5.5)
+      .attr('cx', (d) => x(d.dd)).attr('cy', (d) => y(d.fmin))
+      .style('fill', (d) => d.now ? 'var(--color-fg)' : d.state === 'bodem' ? 'var(--color-ok)' : d.state === 'lager' ? 'var(--color-bad)' : 'var(--color-panel)')
+      .style('stroke', (d) => d.now ? 'var(--color-panel)' : d.state === 'open' ? 'var(--color-ok)' : 'var(--color-panel)').attr('stroke-width', (d) => d.state === 'open' ? 2 : 1.5).style('fill-opacity', (d) => d.now ? 1 : 0.85);
+    const lab = all.filter((d) => d.now || (cy.rows() || []).some((e) => e.kind === 'bodem' && Math.abs(e.t - d.t) < 30 * DAY));
+    svg.append('g').selectAll('text').data(lab).join('text').attr('class', 'cy-lab').attr('x', (d) => x(d.dd)).attr('y', (d) => y(d.fmin) - 10).attr('text-anchor', 'middle')
+      .text((d) => d.now ? 'nu' : `${M[new Date(d.t).getUTCMonth()]} '${String(new Date(d.t).getUTCFullYear()).slice(2)}`);
+    cy.hover(el, svg, W, H, all, (d) => x(d.dd), (d) => y(d.fmin), (d) => [
+      d.now ? 'Nu' : `${dayS(d.t)} ${new Date(d.t).getUTCFullYear()} · ${d.state === 'bodem' ? 'werd bodem' : d.state === 'lager' ? 'daarna lager' : 'houdt tot nu'}`,
+      `F&G ${d.fmin} · daling ${d3.format('.0%')(d.dd)} · ${d.xf} dagen <25`]);
+  };
+
+  const renderHero = (cb, tm) => {
+    const P = price();
+    if (cb) {
+      setText('bz-core', `${r500(cb.core[0])} – ${r500(cb.core[1])}`);
+      setText('bz-wide', `${r500(cb.wide[0])} – ${r500(cb.wide[1])}`);
+      setText('bz-peak', r500(cb.peak));
+      setText('bz-core-sub', `${cb.act.length} modellen meegeteld. De helft van het gewicht valt in deze zone.`);
+      const dist = $('bz-dist');
+      if (dist && P) {
+        const inZ = P >= cb.core[0] && P <= cb.core[1];
+        dist.textContent = inZ ? `In de zone (${usd(Math.round(P))})` : P > cb.core[1] ? `${pct(P / cb.core[1] - 1)} erboven` : `${pct(P / cb.core[0] - 1)} eronder`;
+        dist.className = 'wma-v ' + (inZ || P < cb.core[0] ? 'good' : P / cb.core[1] < 1.1 ? 'warn' : '');
+      }
+    } else setText('bz-core-sub', 'Geen modellen meegeteld.');
+    if (tm) {
+      const now = Date.now();
+      setText('bz-time', `${mon(tm.a)} – ${mon(tm.b)}`);
+      const f = (a) => `${d3.format('.0f')(d3.min(a))}–${d3.format('.0f')(d3.max(a))}`;
+      const state = now > tm.b ? 'Het historische venster is voorbij: houdt de bodem van juni, dan was dat volgens het cycluspatroon de cyclusbodem.'
+        : now >= tm.a ? `We zitten nu in het venster (nog ${Math.ceil((tm.b - now) / DAY)} dagen). Blijft een nieuwe low uit, dan was juni volgens het patroon de cyclusbodem.`
+        : `Het venster begint over ${Math.ceil((tm.a - now) / DAY)} dagen.`;
+      setText('bz-time-sub', `Tijdvenster: top + ${f(tm.tbM)} maanden (${dayS(tm.w1[0])} – ${dayS(tm.w1[1])} ${new Date(tm.w1[1]).getUTCFullYear()}) en halving + ${f(tm.hbM)} maanden (${dayS(tm.w2[0])} – ${dayS(tm.w2[1])} ${new Date(tm.w2[1]).getUTCFullYear()}), uit cyclus 1–3. ${state}`);
+    }
+  };
+
+  let busy = false;
+  const render = () => {
+    if (busy || !window.cy || !window.hub) return;
+    busy = true;
+    try {
+      const ms = models(), cb = combine(ms), tm = timing();
+      renderHero(cb, tm);
+      try { drawRange(ms, cb); } catch (e) { console.error(e); }
+      renderTable(ms);
+      try { renderSignals(); } catch (e) { console.error(e); }
+      try { renderMiners(); } catch (e) { console.error(e); }
+      try { renderDeriv(); } catch (e) { console.error(e); }
+      try { renderMvrv(); } catch (e) { console.error(e); }
+      try { renderFngDips(); } catch (e) { console.error(e); }
+    } finally { busy = false; }
+  };
+
+  // instellingen miner-kostprijs
+  const jth = $('bz-jth'), kwh = $('bz-kwh');
+  if (jth && kwh) {
+    jth.value = cfg.jth; kwh.value = cfg.kwh;
+    const upd = () => { const a = +jth.value, b = +kwh.value; if (a > 0 && b > 0) { cfg.jth = a; cfg.kwh = b; saveCfg(); render(); } };
+    jth.addEventListener('change', upd); kwh.addEventListener('change', upd);
+  }
+
+  // dash.redraw() loopt bij laden, resize, nieuwe dagkoersen en elke live prijs: dan ook hier hertekenen
+  dash.draw('bodem', () => render());
+  window.addEventListener('btcfng', () => render());
+  loadCm(); loadMiners(); loadDeriv();
+  setInterval(loadMiners, 10 * 60000); setInterval(loadDeriv, 10 * 60000); setInterval(loadCm, 6 * 3600000);
+  return { render, data: D, models, combine };
 })();
 </script>
 
