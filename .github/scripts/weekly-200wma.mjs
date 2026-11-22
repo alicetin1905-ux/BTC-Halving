@@ -248,7 +248,7 @@ const runBeta = async () => {
   const c = compute(series.BTC);
   const targets = [
     ['200WMA nu', wl.sma], ['200W EMA nu', wl.ema], [c.qs[0].label.replace('eind', '200WMA eind'), c.qs[0].value],
-    ['10% onder 200WMA', wl.sma * 0.9], ['juni-low 2026', 58526],
+    ['10% onder 200WMA', wl.sma * 0.9], ['cyclusbodem nov 2026', 55106],
   ];
   const L = [`Nu (laatste dagslot ${day(lastOf('BTC').t)}): BTC ${fmt(P.BTC)} · ETH ${fmtP(P.ETH)} · SOL ${fmtP(P.SOL)} · ETH/BTC ${(P.ETH / P.BTC).toFixed(5)} · SOL/BTC ${(P.SOL / P.BTC * 1000).toFixed(3)}‰`];
   const B = {};

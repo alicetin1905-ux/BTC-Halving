@@ -5,6 +5,7 @@
 //   variable NTFY_SERVER  eigen ntfy-server (optioneel, standaard https://ntfy.sh)
 //   variable MINER_JTH    gemiddelde efficiëntie van het netwerk in J/TH (optioneel, standaard 22)
 //   variable MINER_KWH    stroomprijs in $/kWh (optioneel, standaard 0.05)
+// Daarnaast: een melding bij een nieuwe cyclus-low (koers onder de laagste koers sinds de top, in stappen van 2%).
 // MODE=status stuurt altijd een overzicht (om te testen). DRY_RUN=1 toont het bericht zonder te versturen.
 // De vorige toestand staat in STATE_FILE (de workflow bewaart die tussen runs in de Actions-cache).
 
@@ -35,11 +36,11 @@ const loadDaily = async () => {   // Bitstamp, ±2000 dagen: genoeg voor het 200
     const j = await getJson(`https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=86400&limit=1000&end=${end}`);
     const ohlc = j.data.ohlc.filter((k) => +k.close > 0);
     if (!ohlc.length) break;
-    out = ohlc.map((k) => ({ t: +k.timestamp * 1000, close: +k.close })).concat(out);
+    out = ohlc.map((k) => ({ t: +k.timestamp * 1000, close: +k.close, low: +k.low })).concat(out);
     end = +ohlc[0].timestamp - 86400;
   }
-  const byDay = new Map(out.map((r) => [Math.floor(r.t / DAY), r.close]));
-  const rows = [...byDay.entries()].map(([d, close]) => ({ t: d * DAY, close })).sort((a, b) => a.t - b.t);
+  const byDay = new Map(out.map((r) => [Math.floor(r.t / DAY), r]));
+  const rows = [...byDay.entries()].map(([d, r]) => ({ t: d * DAY, close: r.close, low: r.low > 0 ? r.low : r.close })).sort((a, b) => a.t - b.t);
   if (rows.length < 1420) throw new Error(`te weinig dagen (${rows.length})`);
   return rows;
 };
@@ -146,6 +147,20 @@ const send = async (title, body, priority, tags) => {
   gh('notice', `Verstuurd naar ntfy: ${title}`);
 };
 
+// Laagste koers (dag-low) sinds de cyclustop van 6 oktober 2025, inclusief de live koers
+const CYCLE_TOP = Date.UTC(2025, 9, 6);
+export const cycleLow = (daily, price) => {
+  if (!daily) return null;
+  const since = daily.filter((r) => r.t >= CYCLE_TOP);
+  if (!since.length) return null;
+  let m = since.reduce((a, b) => (b.low < a.low ? b : a));
+  m = { price: m.low, t: m.t };
+  if (price && price < m.price) m = { price, t: Math.floor(Date.now() / DAY) * DAY };
+  return m;
+};
+const NEW_LOW_STEP = 0.98;   // nieuwe melding pas als de low minstens 2% onder de vorige gemelde low ligt
+const dayS = (t) => { const d = new Date(t); return `${d.getUTCDate()} ${['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'][d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+
 const main = async () => {
   let saved = { signals: {}, score: null };
   try { saved = { ...saved, ...JSON.parse(readFileSync(STATE_FILE, 'utf8')) }; } catch (e) { gh('notice', 'Geen vorige toestand gevonden: dit is de eerste run.'); }
@@ -161,22 +176,32 @@ const main = async () => {
   const byId = new Map(sigs.map((s) => [s.id, s]));
   const overview = [...SCORE_IDS, 'dip', 'fngstreak'].filter((id) => byId.has(id)).map((id) => { const s = byId.get(id); return `${state[id] ? '🟢' : '⚪'} ${s.name}: ${s.txt}`; });
   const head = `BTC ${fmt(d.price)} · kapitulatiescore ${score}/${known.length}`;
+  // nieuwe cyclus-low: de prijs zakt onder de laagste koers sinds de top
+  const cl = cycleLow(d.daily, d.price);
+  let cycle = saved.cycleLow || null, newLow = null;
+  if (cl) {
+    if (!cycle) cycle = { price: cl.price, t: cl.t };                       // eerste keer: alleen onthouden
+    else if (cl.price < cycle.price * NEW_LOW_STEP) { newLow = { prev: cycle, now: cl }; cycle = { price: cl.price, t: cl.t }; }
+    overview.push(`📉 Cyclusbodem: ${fmt(cl.price)} (${dayS(cl.t)}) · prijs ${pct(d.price / cl.price - 1)} erboven`);
+  }
+  const lowLine = newLow ? `📉 NIEUWE CYCLUS-LOW: ${fmt(newLow.now.price)}, onder de vorige low van ${fmt(newLow.prev.price)} (${dayS(newLow.prev.t)}). De bodem is nog niet gezet; het dashboard schuift de cyclusbodem mee.` : null;
 
   const scoreUp = prevScore != null && ((prevScore < 3 && score >= 3) || (prevScore < 5 && score >= 5));
   if (first || process.env.MODE === 'status') {
     await send(first ? 'Bodemsignalen staan aan' : 'Bodemsignalen: overzicht', [head, '', ...overview, '', 'Je krijgt een melding zodra een van deze signalen aan of uit gaat.'].join('\n'), 2, ['bar_chart']);
-  } else if (changes.length) {
+  } else if (changes.length || newLow) {
     const ons = changes.filter((c) => c.now);
     const lines = changes.map((c) => `${c.now ? '🟢 AAN' : '⚪ UIT'} · ${c.name}: ${c.txt}`);
-    const title = changes.length === 1
+    const title = newLow ? `📉 Nieuwe cyclus-low: ${fmt(newLow.now.price)}` + (changes.length ? ` · ${changes.length} signaal${changes.length > 1 ? 'en' : ''} veranderd` : '')
+      : changes.length === 1
       ? `${changes[0].now ? '🟢' : '⚪'} ${changes[0].name}${changes[0].now ? '' : ' (uit)'}`
       : `${changes.length} bodemsignalen veranderd (${ons.length} aan)`;
     let note = '';
     if (score >= 5) note = '🚨 5 of meer signalen tegelijk: lijkt op een echte capitulatie, zoals bij eerdere cyclusbodems.';
     else if (scoreUp && score >= 3) note = '⚠️ 3 of meer signalen aan: stress in de markt, nog geen volle capitulatie.';
     await send(scoreUp && score >= 5 ? `🚨 Kapitulatiescore ${score}/${known.length}` : title,
-      [head, ...(note ? [note] : []), '', ...lines, '', 'Alle signalen:', ...overview].join('\n'),
-      score >= 5 ? 5 : ons.length ? 4 : 3, [ons.length ? 'rotating_light' : 'white_circle']);
+      [head, ...(lowLine ? [lowLine] : []), ...(note ? [note] : []), ...(lines.length ? ['', ...lines] : []), '', 'Alle signalen:', ...overview].join('\n'),
+      score >= 5 ? 5 : ons.length || newLow ? 4 : 3, [newLow ? 'chart_with_downwards_trend' : ons.length ? 'rotating_light' : 'white_circle']);
   } else {
     console.log(`Geen veranderingen. ${head}\n${overview.join('\n')}`);
     summary(`### Geen veranderingen\n\n- ${head}\n` + overview.map((l) => `- ${l}`).join('\n'));
@@ -184,7 +209,7 @@ const main = async () => {
 
   if (process.exitCode) return;   // melding niet verstuurd: toestand niet opslaan, dan probeert de volgende run opnieuw
   mkdirSync(dirname(STATE_FILE), { recursive: true });
-  writeFileSync(STATE_FILE, JSON.stringify({ signals: state, score, t: new Date().toISOString() }, null, 2));
+  writeFileSync(STATE_FILE, JSON.stringify({ signals: state, score, cycleLow: cycle, t: new Date().toISOString() }, null, 2));
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { gh('error', e.message || e); process.exit(1); });
