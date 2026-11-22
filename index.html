@@ -241,12 +241,13 @@ html{scroll-behavior:smooth}
 </style>
 
 <script>
-window.BTC_EVENTS = [{"id": "genesis", "date": "2009-01-03", "kind": "genesis", "price": null, "cycle": 0, "projectie": false, "label": "Genesisblok, nog geen marktprijs", "block": null, "reward": null}, {"id": "low0a", "date": "2010-07-17", "kind": "bodem", "price": 0.06, "cycle": 0, "projectie": false, "label": "Eerste marktnotering", "block": null, "reward": null}, {"id": "mid0", "date": "2010-11-06", "kind": "tussentop", "price": 0.39, "cycle": 0, "projectie": false, "label": "Eerste rally", "block": null, "reward": null}, {"id": "top0", "date": "2011-06-08", "kind": "top", "price": 31.91, "cycle": 0, "projectie": false, "label": "Top cyclus 0", "block": null, "reward": null}, {"id": "low0", "date": "2011-11-18", "kind": "bodem", "price": 2.01, "cycle": 0, "projectie": false, "label": "Bodem cyclus 0", "block": null, "reward": null}, {"id": "halving1", "date": "2012-11-28", "kind": "halving", "price": 12.35, "cycle": 1, "projectie": false, "label": "Halving 1 (50 → 25 BTC)", "block": 210000, "reward": 25}, {"id": "mid1", "date": "2013-04-09", "kind": "tussentop", "price": 266, "cycle": 1, "projectie": false, "label": "Tussentop april 2013", "block": null, "reward": null}, {"id": "top1", "date": "2013-12-04", "kind": "top", "price": 1150, "cycle": 1, "projectie": false, "label": "Top cyclus 1", "block": null, "reward": null}, {"id": "low1", "date": "2015-01-14", "kind": "bodem", "price": 170, "cycle": 1, "projectie": false, "label": "Bodem cyclus 1", "block": null, "reward": null}, {"id": "halving2", "date": "2016-07-09", "kind": "halving", "price": 650, "cycle": 2, "projectie": false, "label": "Halving 2 (25 → 12,5 BTC)", "block": 420000, "reward": 12.5}, {"id": "top2", "date": "2017-12-17", "kind": "top", "price": 19700, "cycle": 2, "projectie": false, "label": "Top cyclus 2", "block": null, "reward": null}, {"id": "low2", "date": "2018-12-15", "kind": "bodem", "price": 3150, "cycle": 2, "projectie": false, "label": "Bodem cyclus 2", "block": null, "reward": null}, {"id": "dip2", "date": "2020-03-13", "kind": "tussenbodem", "price": 3850, "cycle": 2, "projectie": false, "label": "COVID-crash", "block": null, "reward": null}, {"id": "halving3", "date": "2020-05-11", "kind": "halving", "price": 8600, "cycle": 3, "projectie": false, "label": "Halving 3 (12,5 → 6,25 BTC)", "block": 630000, "reward": 6.25}, {"id": "mid3", "date": "2021-04-14", "kind": "tussentop", "price": 64800, "cycle": 3, "projectie": false, "label": "Tussentop april 2021", "block": null, "reward": null}, {"id": "top3", "date": "2021-11-10", "kind": "top", "price": 69000, "cycle": 3, "projectie": false, "label": "Top cyclus 3", "block": null, "reward": null}, {"id": "low3", "date": "2022-11-21", "kind": "bodem", "price": 15500, "cycle": 3, "projectie": false, "label": "Bodem cyclus 3 (FTX)", "block": null, "reward": null}, {"id": "mid3b", "date": "2024-03-14", "kind": "tussentop", "price": 73800, "cycle": 3, "projectie": false, "label": "ATH vóór de halving", "block": null, "reward": null}, {"id": "halving4", "date": "2024-04-20", "kind": "halving", "price": 64000, "cycle": 4, "projectie": false, "label": "Halving 4 (6,25 → 3,125 BTC)", "block": 840000, "reward": 3.125}, {"id": "top4", "date": "2025-10-06", "kind": "top", "price": 126080, "cycle": 4, "projectie": false, "label": "Top cyclus 4", "block": null, "reward": null}, {"id": "dip4", "date": "2026-02-05", "kind": "tussenbodem", "price": 60000, "cycle": 4, "projectie": false, "label": "Daling naar ±$60k", "block": null, "reward": null}, {"id": "low4", "date": "2026-06-15", "kind": "bodem", "price": 57700, "cycle": 4, "projectie": false, "label": "Laagste punt tot nu (voorlopig)", "block": null, "reward": null}, {"id": "now", "date": "2026-10-26", "kind": "nu", "price": 82423, "cycle": 4, "projectie": false, "label": "Prijs eind oktober 2026", "block": null, "reward": null}, {"id": "halving5", "date": "2028-04-15", "kind": "halving", "price": null, "cycle": 5, "projectie": true, "label": "Halving 5, verwacht (3,125 → 1,5625 BTC)", "block": 1050000, "reward": 1.5625}, {"id": "top5", "date": "2029-11-15", "kind": "verwachte top", "price": null, "cycle": 5, "projectie": true, "label": "Top volgens het patroon (geen voorspelling)", "block": null, "reward": null}];
-window.BTC_ANCHOR_DEFAULT = { price: 57700, date: '2026-06-15' };
+window.BTC_EVENTS = [{"id": "genesis", "date": "2009-01-03", "kind": "genesis", "price": null, "cycle": 0, "projectie": false, "label": "Genesisblok, nog geen marktprijs", "block": null, "reward": null}, {"id": "low0a", "date": "2010-07-17", "kind": "bodem", "price": 0.06, "cycle": 0, "projectie": false, "label": "Eerste marktnotering", "block": null, "reward": null}, {"id": "mid0", "date": "2010-11-06", "kind": "tussentop", "price": 0.39, "cycle": 0, "projectie": false, "label": "Eerste rally", "block": null, "reward": null}, {"id": "top0", "date": "2011-06-08", "kind": "top", "price": 31.91, "cycle": 0, "projectie": false, "label": "Top cyclus 0", "block": null, "reward": null}, {"id": "low0", "date": "2011-11-18", "kind": "bodem", "price": 2.01, "cycle": 0, "projectie": false, "label": "Bodem cyclus 0", "block": null, "reward": null}, {"id": "halving1", "date": "2012-11-28", "kind": "halving", "price": 12.35, "cycle": 1, "projectie": false, "label": "Halving 1 (50 → 25 BTC)", "block": 210000, "reward": 25}, {"id": "mid1", "date": "2013-04-09", "kind": "tussentop", "price": 266, "cycle": 1, "projectie": false, "label": "Tussentop april 2013", "block": null, "reward": null}, {"id": "top1", "date": "2013-12-04", "kind": "top", "price": 1150, "cycle": 1, "projectie": false, "label": "Top cyclus 1", "block": null, "reward": null}, {"id": "low1", "date": "2015-01-14", "kind": "bodem", "price": 170, "cycle": 1, "projectie": false, "label": "Bodem cyclus 1", "block": null, "reward": null}, {"id": "halving2", "date": "2016-07-09", "kind": "halving", "price": 650, "cycle": 2, "projectie": false, "label": "Halving 2 (25 → 12,5 BTC)", "block": 420000, "reward": 12.5}, {"id": "top2", "date": "2017-12-17", "kind": "top", "price": 19700, "cycle": 2, "projectie": false, "label": "Top cyclus 2", "block": null, "reward": null}, {"id": "low2", "date": "2018-12-15", "kind": "bodem", "price": 3150, "cycle": 2, "projectie": false, "label": "Bodem cyclus 2", "block": null, "reward": null}, {"id": "dip2", "date": "2020-03-13", "kind": "tussenbodem", "price": 3850, "cycle": 2, "projectie": false, "label": "COVID-crash", "block": null, "reward": null}, {"id": "halving3", "date": "2020-05-11", "kind": "halving", "price": 8600, "cycle": 3, "projectie": false, "label": "Halving 3 (12,5 → 6,25 BTC)", "block": 630000, "reward": 6.25}, {"id": "mid3", "date": "2021-04-14", "kind": "tussentop", "price": 64800, "cycle": 3, "projectie": false, "label": "Tussentop april 2021", "block": null, "reward": null}, {"id": "top3", "date": "2021-11-10", "kind": "top", "price": 69000, "cycle": 3, "projectie": false, "label": "Top cyclus 3", "block": null, "reward": null}, {"id": "low3", "date": "2022-11-21", "kind": "bodem", "price": 15500, "cycle": 3, "projectie": false, "label": "Bodem cyclus 3 (FTX)", "block": null, "reward": null}, {"id": "mid3b", "date": "2024-03-14", "kind": "tussentop", "price": 73800, "cycle": 3, "projectie": false, "label": "ATH vóór de halving", "block": null, "reward": null}, {"id": "halving4", "date": "2024-04-20", "kind": "halving", "price": 64000, "cycle": 4, "projectie": false, "label": "Halving 4 (6,25 → 3,125 BTC)", "block": 840000, "reward": 3.125}, {"id": "top4", "date": "2025-10-06", "kind": "top", "price": 126080, "cycle": 4, "projectie": false, "label": "Top cyclus 4", "block": null, "reward": null}, {"id": "dip4", "date": "2026-02-05", "kind": "tussenbodem", "price": 60000, "cycle": 4, "projectie": false, "label": "Daling naar ±$60k", "block": null, "reward": null}, {"id": "low4a", "date": "2026-06-15", "kind": "tussenbodem", "price": 57700, "cycle": 4, "projectie": false, "label": "Low juni 2026", "block": null, "reward": null}, {"id": "low4", "date": "2026-11-21", "kind": "bodem", "price": 55106, "cycle": 4, "projectie": false, "label": "Cyclusbodem tot nu (voorlopig)", "block": null, "reward": null}, {"id": "now", "date": "2026-11-22", "kind": "nu", "price": 60849, "cycle": 4, "projectie": false, "label": "Prijs 22 november 2026", "block": null, "reward": null}, {"id": "halving5", "date": "2028-04-15", "kind": "halving", "price": null, "cycle": 5, "projectie": true, "label": "Halving 5, verwacht (3,125 → 1,5625 BTC)", "block": 1050000, "reward": 1.5625}, {"id": "top5", "date": "2029-11-15", "kind": "verwachte top", "price": null, "cycle": 5, "projectie": true, "label": "Top volgens het patroon (geen voorspelling)", "block": null, "reward": null}];
+window.BTC_ANCHOR_DEFAULT = { price: 55106, date: '2026-11-21' };
 try {
   const a = JSON.parse(localStorage.getItem('btcHalvingAnchor') || 'null');
-  if (a && a.price > 0 && /^\d{4}-\d{2}-\d{2}$/.test(a.date)) {
-    window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'low4' ? { ...e, price: a.price, date: a.date, label: 'Cyclusbodem (zelf ingesteld)' } : e);
+  // alleen gebruiken als hij lager ligt dan de standaardbodem of zelf ingesteld is (auto = automatisch meegeschoven)
+  if (a && a.price > 0 && /^\d{4}-\d{2}-\d{2}$/.test(a.date) && (!a.auto || a.price < window.BTC_ANCHOR_DEFAULT.price)) {
+    window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'low4' ? { ...e, price: a.price, date: a.date, label: a.auto ? 'Cyclusbodem (laagste koers, automatisch)' : 'Cyclusbodem (zelf ingesteld)' } : e);
     window.BTC_LOW = a.price;
   }
 } catch (e) { /* geen opslag */ }
@@ -503,7 +504,7 @@ window.dash = (() => {
     </div>
     <div class="cy-chart" id="cmp-chart"></div>
     <h2 style="margin-top:var(--cds-gap-lg)">Bodemscenario's bij een dip in Q4</h2>
-    <p class="cy-note">Berekend vanaf de live prijs, de cyclusbodem (standaard $57.700 in juni, instelbaar onder Alerts) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van juni rond het 200-weeks gemiddelde. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
+    <p class="cy-note">Berekend vanaf de live prijs, de cyclusbodem (de laagste koers sinds de top, schuift automatisch mee; instelbaar onder Alerts) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van de cyclusbodem. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
     <div class="cy-tw">
       <table>
         <thead><tr><th>Scenario</th><th class="r">Bodemzone</th><th class="r">Vanaf nu</th><th class="r">Vanaf top</th></tr></thead>
@@ -669,7 +670,7 @@ window.dash = (() => {
     </details>
     <details class="al-tg">
       <summary>Bodemsignalen bij elke verandering (ook met de app dicht)</summary>
-      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de acht kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, Puell Multiple, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen en 10+ dagen extreme angst in een maand. Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
+      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de acht kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, Puell Multiple, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen en 10+ dagen extreme angst in een maand. Zakt BTC onder de cyclusbodem (de laagste koers sinds de top), dan krijg je een aparte melding "Nieuwe cyclus-low" (opnieuw bij elke 2% lager). Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
     </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>
@@ -682,7 +683,7 @@ window.dash = (() => {
     </details>
     <div class="al-anchor">
       <h3 class="fut-h">Cyclusbodem</h3>
-      <p class="cy-note">De bodemzones, alerts, spookcycli en cyclustabel rekenen vanaf deze bodem. Zakt BTC in Q4 nog lager, vul dan hier de nieuwe bodem in. Standaard: $57.700 op 15 juni 2026.</p>
+      <p class="cy-note">De bodemzones, alerts, spookcycli en cyclustabel rekenen vanaf deze bodem. Zakt BTC lager, dan schuift hij automatisch mee met de laagste dagkoers sinds de top (Hyperliquid, anders Coinbase). Je kunt hem ook zelf instellen. Standaard: $55.106 op 21 november 2026 (de low van juni was $57.700).</p>
       <div class="dca-form">
         <label>Bodemprijs ($) <input id="anc-price" type="number" min="1" step="100" inputmode="numeric"></label>
         <label>Datum <input id="anc-date" type="date"></label>
@@ -1100,7 +1101,7 @@ dash.draw('clock', (el) => {
 <script>
 // ---- Bodemzones (gedeeld door de 2022-grafiek en de alerts) ----
 // Hogere bodem = Fibonacci 0,618–0,786 terug van het herstel (cyclusbodem → hoogste koers sindsdien).
-window.BTC_LOW = window.BTC_LOW || 57700;
+window.BTC_LOW = window.BTC_LOW || window.BTC_ANCHOR_DEFAULT.price;
 window.BTC_TOP = 126080;
 window.btcZones = (P) => {
   const LOW = window.BTC_LOW, HIGH = Math.max(window.btcRallyHigh || 0, P);
@@ -1182,7 +1183,34 @@ window.hub = (() => {
     return rows;
   };
 
-  const anchorT = () => { const e = (window.BTC_EVENTS || []).find((q) => q.id === 'low4'); return e ? Date.parse(e.date + 'T00:00:00Z') : Date.UTC(2026, 5, 15); };
+  // ---- Cyclusbodem automatisch laten meeschuiven: zakt de laagste dagkoers (low) sinds de top onder de bodem, dan wordt dat de nieuwe bodem ----
+  let applyAnchor = null;
+  const loadCycleLow = async () => {
+    const ev = window.BTC_EVENTS || [], top = ev.find((q) => q.id === 'top4'), low = ev.find((q) => q.id === 'low4');
+    if (!top || !low || !applyAnchor) return;
+    const t0 = Date.parse(top.date + 'T00:00:00Z');
+    let rows = null;
+    try {
+      const j = await fetch('https://api.hyperliquid.xyz/info', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'candleSnapshot', req: { coin: 'BTC', interval: '1d', startTime: t0, endTime: Date.now() } }) }).then((r) => r.json());
+      rows = j.map((k) => ({ t: k.t, l: +k.l })).filter((k) => k.l > 0);
+    } catch (e) { console.warn('cyclus-low Hyperliquid', e); }
+    if (!rows || !rows.length) {
+      try {
+        const end = Date.now(), start = end - 299 * DAY;
+        const j = await json(`https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=${new Date(start).toISOString()}&end=${new Date(end).toISOString()}`);
+        rows = j.map((k) => ({ t: k[0] * 1000, l: +k[1] })).filter((k) => k.l > 0 && k.t >= t0);
+      } catch (e) { console.warn('cyclus-low Coinbase', e); return; }
+    }
+    if (!rows.length) return;
+    const m = rows.reduce((a, b) => (b.l < a.l ? b : a));
+    if (m.l < low.price * 0.995) {
+      const date = new Date(m.t).toISOString().slice(0, 10);
+      applyAnchor(Math.round(m.l), date, 'auto');
+      const st = $('anc-state'); if (st) st.textContent = `Automatisch bijgewerkt naar de laagste koers: ${usd(Math.round(m.l))} op ${cy.date(date)}.`;
+    }
+  };
+
+  const anchorT = () => { const e = (window.BTC_EVENTS || []).find((q) => q.id === 'low4'); return e ? Date.parse(e.date + 'T00:00:00Z') : Date.UTC(2026, 10, 21); };
   const computeRally = () => {
     if (!S.daily) return;
     const after = S.daily.rows.filter((r) => r.t >= anchorT());
@@ -1334,7 +1362,7 @@ window.hub = (() => {
     if (!S.fng || !S.fng.length) return;
     const now = S.fng[S.fng.length - 1];
     setText('fng-now', String(now.v)); setText('fng-now-lbl', nl(now.cls));
-    [['fng-b18', '2018-12-15'], ['fng-b22', '2022-11-21'], ['fng-b26', '2026-06-15']].forEach(([id, iso]) => {
+    [['fng-b18', '2018-12-15'], ['fng-b22', '2022-11-21']].forEach(([id, iso]) => {
       const f = fngAt(iso); setText(id, f && Math.abs(f.t - Date.parse(iso)) < 7 * DAY ? String(f.v) : '—');
     });
     const el = $('fng-chart'); if (!el) return;
@@ -1349,7 +1377,8 @@ window.hub = (() => {
     timeAxis(svg, x, W, H);
     svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.7).attr('stroke-width', 1.2)
       .attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.v))(rows));
-    const bottoms = [['2018-12-15', 'bodem 2018'], ['2022-11-21', 'bodem 2022'], ['2026-06-15', 'low 2026']].map(([iso, lbl]) => ({ f: fngAt(iso), lbl })).filter((b) => b.f);
+    const l4 = (window.BTC_EVENTS || []).find((e) => e.id === 'low4');
+    const bottoms = [['2018-12-15', 'bodem 2018'], ['2022-11-21', 'bodem 2022'], ['2026-06-15', 'low jun 2026'], ...(l4 && l4.date !== '2026-06-15' ? [[l4.date, 'bodem 2026']] : [])].map(([iso, lbl]) => ({ f: fngAt(iso), lbl })).filter((b) => b.f);
     const g = svg.append('g').selectAll('g').data(bottoms).join('g').attr('transform', (b) => `translate(${x(new Date(b.f.t))},${y(b.f.v)})`);
     g.append('circle').attr('r', 5).attr('class', 'cy-pt k-bodem');
     g.append('text').attr('class', 'cy-lab').attr('y', -9).attr('text-anchor', 'middle').text((b) => b.lbl);
@@ -1453,9 +1482,9 @@ window.hub = (() => {
     const fill = () => { const e = cur(); if (e) { if (ap) ap.value = e.price; if (ad) ad.value = e.date; } };
     fill();
     const apply = (price, date, custom) => {
-      window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'low4' ? { ...e, price, date, label: custom ? 'Cyclusbodem (zelf ingesteld)' : 'Laagste punt tot nu (voorlopig)' } : e);
+      window.BTC_EVENTS = window.BTC_EVENTS.map((e) => e.id === 'low4' ? { ...e, price, date, label: custom === 'auto' ? 'Cyclusbodem (laagste koers, automatisch)' : custom ? 'Cyclusbodem (zelf ingesteld)' : 'Cyclusbodem tot nu (voorlopig)' } : e);
       window.BTC_LOW = price;
-      try { if (custom) localStorage.setItem('btcHalvingAnchor', JSON.stringify({ price, date })); else localStorage.removeItem('btcHalvingAnchor'); } catch (e) { /* */ }
+      try { if (custom) localStorage.setItem('btcHalvingAnchor', JSON.stringify({ price, date, ...(custom === 'auto' ? { auto: true } : {}) })); else localStorage.removeItem('btcHalvingAnchor'); } catch (e) { /* */ }
       AL.lastZone = null; AL.lastWeek = null; saveSt();
       computeRally();
       dash.setRows('events', window.BTC_EVENTS);
@@ -1463,6 +1492,7 @@ window.hub = (() => {
       window.dispatchEvent(new Event('resize'));
       fill();
     };
+    applyAnchor = apply;
     const save2 = $('anc-save'); if (save2) save2.addEventListener('click', () => {
       const price = +ap.value, date = ad.value;
       const topE = (window.BTC_EVENTS || []).find((q) => q.id === 'top4');
@@ -1473,7 +1503,7 @@ window.hub = (() => {
       if (ast) ast.textContent = `Toegepast: ${usd(price)} op ${cy.date(date)}.`;
     });
     const reset = $('anc-reset'); if (reset) reset.addEventListener('click', () => {
-      const d = window.BTC_ANCHOR_DEFAULT || { price: 57700, date: '2026-06-15' };
+      const d = window.BTC_ANCHOR_DEFAULT;
       apply(d.price, d.date, false);
       if (ast) ast.textContent = 'Terug naar de standaardbodem.';
     });
@@ -1792,12 +1822,13 @@ window.hub = (() => {
   initAlerts();
   window.addEventListener('btcprice', () => { renderWma(); renderIndicators(); renderRainbow(); checkAlerts(); });
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { drawInd(); renderRainbow(); renderFuture(); renderFng(); }, 150); });
-  loadDaily(); loadFng(); loadMem(); loadAlts();
+  loadDaily(); loadFng(); loadMem(); loadAlts(); loadCycleLow();
+  setInterval(loadCycleLow, 15 * 60000);
   setInterval(loadDaily, 30 * 60000); setInterval(loadFng, 60 * 60000); setInterval(loadMem, 10 * 60000); setInterval(loadAlts, 60 * 60000);
   let lastRefresh = Date.now();
   document.addEventListener('visibilitychange', () => {
     if (document.hidden || Date.now() - lastRefresh < 5 * 60000) return;
-    lastRefresh = Date.now(); loadDaily(); loadFng(); loadMem(); loadAlts();
+    lastRefresh = Date.now(); loadDaily(); loadFng(); loadMem(); loadAlts(); loadCycleLow();
   });
   return { state: S, frame, timeAxis, timeHover };
 })();
@@ -2129,7 +2160,7 @@ window.bodem = (() => {
     const P = price(); if (!P) return [];
     const out = [], ev = cy.rows() || [];
     const cyc = dash.data('cycles');
-    const TOP = window.BTC_TOP || 126080, LOW = window.BTC_LOW || 57700;
+    const TOP = window.BTC_TOP || 126080, LOW = window.BTC_LOW || window.BTC_ANCHOR_DEFAULT.price;
     if (cyc.status === 'ok') {
       const fr = ['Cyclus 1', 'Cyclus 2', 'Cyclus 3'].map((n) => cyc.data.find((c) => c.cyclus === n)).filter(Boolean).map((c) => 1 + c.daling);
       if (fr.length === 3) {
@@ -2139,8 +2170,8 @@ window.bodem = (() => {
       }
     }
     const w = w200();
-    if (w) out.push({ id: 'wma', name: '200-weeks gemiddelde', lo: w * 0.9, hi: w, w: 1,
-      why: `200WMA nu ${usd(Math.round(w))}. De bodems van 2015, 2018, 2020 en juni 2026 lagen op 0,90–1,00× deze lijn (2022: 0,66×).` });
+    if (w) out.push({ id: 'wma', name: '200-weeks gemiddelde', lo: w * 0.8, hi: w, w: 1,
+      why: `200WMA nu ${usd(Math.round(w))}. De bodems van 2015, 2018 en 2020 lagen op 0,90–1,00× deze lijn, juni 2026 op 0,94× en november 2026 op 0,81× (2022: 0,66×).` });
     const rz = realized();
     if (rz) {
       const bm = bottomMvrv();
@@ -2154,11 +2185,11 @@ window.bodem = (() => {
     if (lq && lq.cluster) out.push({ id: 'liq', name: 'Liquidatiecluster', lo: lq.cluster.lo, hi: lq.cluster.hi, w: 0.75,
       why: `Grootste geschatte cluster long-liquidaties onder de prijs (${d3.format('.0%')(lq.shareCl)} van alle longs in beeld). Bij paniek trekt de prijs daar vaak naartoe.` });
     out.push({ id: 'dbl', name: 'Retest cyclusbodem', lo: LOW * 0.97, hi: LOW * 1.03, w: 1,
-      why: `Dubbele bodem rond de cyclusbodem van ${usd(LOW)} (${(ev.find((e) => e.id === 'low4') || {}).date || 'juni 2026'}), zoals juni → november 2022 maar zonder lagere low.` });
+      why: `Dubbele bodem: een retest van de cyclusbodem van ${usd(LOW)} (${cy.date((ev.find((e) => e.id === 'low4') || {}).date || window.BTC_ANCHOR_DEFAULT.date)}) zonder lagere low.` });
     if (window.btcZones) {
       const z = window.btcZones(P)[0];
       out.push({ id: 'fib', name: 'Hogere bodem (Fibonacci)', lo: z.lo, hi: z.hi, w: 1,
-        why: `0,618–0,786 terugval van het herstel ${usd(LOW)} → ${usd(Math.round(Math.max(window.btcRallyHigh || 0, P)))}: een hogere bodem boven die van juni.` });
+        why: `0,618–0,786 terugval van het herstel ${usd(LOW)} → ${usd(Math.round(Math.max(window.btcRallyHigh || 0, P)))}: een hogere bodem boven de cyclusbodem.` });
     }
     if (window.btcPL) out.push({ id: 'pl', name: 'Power Law-vloer', lo: window.btcPL.floor, hi: window.btcPL.floor * 1.15, w: 0.5,
       why: `Lange-termijnvloer (${usd(Math.round(window.btcPL.floor))}) die elke bodem sinds 2013 opving. Half gewicht: de bodems blijven steeds verder boven de vloer.` });
@@ -2188,7 +2219,7 @@ window.bodem = (() => {
   // ---- tekenen ----
   const drawRange = (ms, cb) => {
     const el = $('bz-chart'); if (!el || !ms.length || !window.hub || !hub.frame) return;
-    const P = price(), LOW = window.BTC_LOW || 57700;
+    const P = price(), LOW = window.BTC_LOW || window.BTC_ANCHOR_DEFAULT.price;
     const W0 = el.clientWidth || 600, rowH = 30, densH = 90, mt = 8, mb = 26;
     const H = mt + densH + 12 + ms.length * rowH + mb;
     const { W, svg } = hub.frame(el, H);
@@ -2506,8 +2537,11 @@ window.bodem = (() => {
       const now = Date.now();
       setText('bz-time', `${mon(tm.a)} – ${mon(tm.b)}`);
       const f = (a) => `${d3.format('.0f')(d3.min(a))}–${d3.format('.0f')(d3.max(a))}`;
-      const state = now > tm.b ? 'Het historische venster is voorbij: houdt de bodem van juni, dan was dat volgens het cycluspatroon de cyclusbodem.'
-        : now >= tm.a ? `We zitten nu in het venster (nog ${Math.ceil((tm.b - now) / DAY)} dagen). Blijft een nieuwe low uit, dan was juni volgens het patroon de cyclusbodem.`
+      const lowE = (cy.rows() || []).find((e) => e.id === 'low4');
+      const lowTxt = lowE ? `${usd(lowE.price)} op ${cy.date(lowE.date)}` : 'de cyclusbodem';
+      const rel = !lowE ? '' : lowE.t > tm.b ? `, ${Math.round((lowE.t - tm.b) / DAY)} dagen na het venster` : lowE.t >= tm.a ? ', binnen het venster' : `, ${Math.round((tm.a - lowE.t) / DAY)} dagen vóór het venster`;
+      const state = now > tm.b ? `Het historische venster is voorbij. De laagste koers tot nu is ${lowTxt}${rel}: zakt BTC daar niet meer onder, dan is dat volgens het patroon de cyclusbodem.`
+        : now >= tm.a ? `We zitten nu in het venster (nog ${Math.ceil((tm.b - now) / DAY)} dagen). Blijft een lagere koers dan ${lowTxt} uit, dan is dat volgens het patroon de cyclusbodem.`
         : `Het venster begint over ${Math.ceil((tm.a - now) / DAY)} dagen.`;
       setText('bz-time-sub', `Tijdvenster: top + ${f(tm.tbM)} maanden (${dayS(tm.w1[0])} – ${dayS(tm.w1[1])} ${new Date(tm.w1[1]).getUTCFullYear()}) en halving + ${f(tm.hbM)} maanden (${dayS(tm.w2[0])} – ${dayS(tm.w2[1])} ${new Date(tm.w2[1]).getUTCFullYear()}), uit cyclus 1–3. ${state}`);
     }
