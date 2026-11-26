@@ -225,6 +225,7 @@ html{scroll-behavior:smooth}
 .bz-low{stroke:var(--color-ok);stroke-width:1.5;stroke-dasharray:4 3}
 #bz-chart{min-height:340px}
 #bz-hr-chart,#bz-liq-chart,#bz-mvrv-chart,#bz-puell-chart{min-height:240px}
+#bz-mvrv-chart{min-height:280px}
 .bz-pu-low{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
 .bz-pu-high{fill:color-mix(in srgb,var(--color-bad) 10%,transparent)}
 #bz-fg-chart{min-height:260px}
@@ -241,7 +242,7 @@ html{scroll-behavior:smooth}
 </style>
 
 <script>
-window.BTC_EVENTS = [{"id": "genesis", "date": "2009-01-03", "kind": "genesis", "price": null, "cycle": 0, "projectie": false, "label": "Genesisblok, nog geen marktprijs", "block": null, "reward": null}, {"id": "low0a", "date": "2010-07-17", "kind": "bodem", "price": 0.06, "cycle": 0, "projectie": false, "label": "Eerste marktnotering", "block": null, "reward": null}, {"id": "mid0", "date": "2010-11-06", "kind": "tussentop", "price": 0.39, "cycle": 0, "projectie": false, "label": "Eerste rally", "block": null, "reward": null}, {"id": "top0", "date": "2011-06-08", "kind": "top", "price": 31.91, "cycle": 0, "projectie": false, "label": "Top cyclus 0", "block": null, "reward": null}, {"id": "low0", "date": "2011-11-18", "kind": "bodem", "price": 2.01, "cycle": 0, "projectie": false, "label": "Bodem cyclus 0", "block": null, "reward": null}, {"id": "halving1", "date": "2012-11-28", "kind": "halving", "price": 12.35, "cycle": 1, "projectie": false, "label": "Halving 1 (50 → 25 BTC)", "block": 210000, "reward": 25}, {"id": "mid1", "date": "2013-04-09", "kind": "tussentop", "price": 266, "cycle": 1, "projectie": false, "label": "Tussentop april 2013", "block": null, "reward": null}, {"id": "top1", "date": "2013-12-04", "kind": "top", "price": 1150, "cycle": 1, "projectie": false, "label": "Top cyclus 1", "block": null, "reward": null}, {"id": "low1", "date": "2015-01-14", "kind": "bodem", "price": 170, "cycle": 1, "projectie": false, "label": "Bodem cyclus 1", "block": null, "reward": null}, {"id": "halving2", "date": "2016-07-09", "kind": "halving", "price": 650, "cycle": 2, "projectie": false, "label": "Halving 2 (25 → 12,5 BTC)", "block": 420000, "reward": 12.5}, {"id": "top2", "date": "2017-12-17", "kind": "top", "price": 19700, "cycle": 2, "projectie": false, "label": "Top cyclus 2", "block": null, "reward": null}, {"id": "low2", "date": "2018-12-15", "kind": "bodem", "price": 3150, "cycle": 2, "projectie": false, "label": "Bodem cyclus 2", "block": null, "reward": null}, {"id": "dip2", "date": "2020-03-13", "kind": "tussenbodem", "price": 3850, "cycle": 2, "projectie": false, "label": "COVID-crash", "block": null, "reward": null}, {"id": "halving3", "date": "2020-05-11", "kind": "halving", "price": 8600, "cycle": 3, "projectie": false, "label": "Halving 3 (12,5 → 6,25 BTC)", "block": 630000, "reward": 6.25}, {"id": "mid3", "date": "2021-04-14", "kind": "tussentop", "price": 64800, "cycle": 3, "projectie": false, "label": "Tussentop april 2021", "block": null, "reward": null}, {"id": "top3", "date": "2021-11-10", "kind": "top", "price": 69000, "cycle": 3, "projectie": false, "label": "Top cyclus 3", "block": null, "reward": null}, {"id": "low3", "date": "2022-11-21", "kind": "bodem", "price": 15500, "cycle": 3, "projectie": false, "label": "Bodem cyclus 3 (FTX)", "block": null, "reward": null}, {"id": "mid3b", "date": "2024-03-14", "kind": "tussentop", "price": 73800, "cycle": 3, "projectie": false, "label": "ATH vóór de halving", "block": null, "reward": null}, {"id": "halving4", "date": "2024-04-20", "kind": "halving", "price": 64000, "cycle": 4, "projectie": false, "label": "Halving 4 (6,25 → 3,125 BTC)", "block": 840000, "reward": 3.125}, {"id": "top4", "date": "2025-10-06", "kind": "top", "price": 126080, "cycle": 4, "projectie": false, "label": "Top cyclus 4", "block": null, "reward": null}, {"id": "dip4", "date": "2026-02-05", "kind": "tussenbodem", "price": 60000, "cycle": 4, "projectie": false, "label": "Daling naar ±$60k", "block": null, "reward": null}, {"id": "low4a", "date": "2026-06-15", "kind": "tussenbodem", "price": 57700, "cycle": 4, "projectie": false, "label": "Low juni 2026", "block": null, "reward": null}, {"id": "low4", "date": "2026-11-21", "kind": "bodem", "price": 55106, "cycle": 4, "projectie": false, "label": "Cyclusbodem tot nu (voorlopig)", "block": null, "reward": null}, {"id": "now", "date": "2026-11-22", "kind": "nu", "price": 60849, "cycle": 4, "projectie": false, "label": "Prijs 22 november 2026", "block": null, "reward": null}, {"id": "halving5", "date": "2028-04-15", "kind": "halving", "price": null, "cycle": 5, "projectie": true, "label": "Halving 5, verwacht (3,125 → 1,5625 BTC)", "block": 1050000, "reward": 1.5625}, {"id": "top5", "date": "2029-11-15", "kind": "verwachte top", "price": null, "cycle": 5, "projectie": true, "label": "Top volgens het patroon (geen voorspelling)", "block": null, "reward": null}];
+window.BTC_EVENTS = [{"id": "genesis", "date": "2009-01-03", "kind": "genesis", "price": null, "cycle": 0, "projectie": false, "label": "Genesisblok, nog geen marktprijs", "block": null, "reward": null}, {"id": "low0a", "date": "2010-07-17", "kind": "bodem", "price": 0.06, "cycle": 0, "projectie": false, "label": "Eerste marktnotering", "block": null, "reward": null}, {"id": "mid0", "date": "2010-11-06", "kind": "tussentop", "price": 0.39, "cycle": 0, "projectie": false, "label": "Eerste rally", "block": null, "reward": null}, {"id": "top0", "date": "2011-06-08", "kind": "top", "price": 31.91, "cycle": 0, "projectie": false, "label": "Top cyclus 0", "block": null, "reward": null}, {"id": "low0", "date": "2011-11-18", "kind": "bodem", "price": 2.01, "cycle": 0, "projectie": false, "label": "Bodem cyclus 0", "block": null, "reward": null}, {"id": "halving1", "date": "2012-11-28", "kind": "halving", "price": 12.35, "cycle": 1, "projectie": false, "label": "Halving 1 (50 → 25 BTC)", "block": 210000, "reward": 25}, {"id": "mid1", "date": "2013-04-09", "kind": "tussentop", "price": 266, "cycle": 1, "projectie": false, "label": "Tussentop april 2013", "block": null, "reward": null}, {"id": "top1", "date": "2013-12-04", "kind": "top", "price": 1150, "cycle": 1, "projectie": false, "label": "Top cyclus 1", "block": null, "reward": null}, {"id": "low1", "date": "2015-01-14", "kind": "bodem", "price": 170, "cycle": 1, "projectie": false, "label": "Bodem cyclus 1", "block": null, "reward": null}, {"id": "halving2", "date": "2016-07-09", "kind": "halving", "price": 650, "cycle": 2, "projectie": false, "label": "Halving 2 (25 → 12,5 BTC)", "block": 420000, "reward": 12.5}, {"id": "top2", "date": "2017-12-17", "kind": "top", "price": 19700, "cycle": 2, "projectie": false, "label": "Top cyclus 2", "block": null, "reward": null}, {"id": "low2", "date": "2018-12-15", "kind": "bodem", "price": 3150, "cycle": 2, "projectie": false, "label": "Bodem cyclus 2", "block": null, "reward": null}, {"id": "dip2", "date": "2020-03-13", "kind": "tussenbodem", "price": 3850, "cycle": 2, "projectie": false, "label": "COVID-crash", "block": null, "reward": null}, {"id": "halving3", "date": "2020-05-11", "kind": "halving", "price": 8600, "cycle": 3, "projectie": false, "label": "Halving 3 (12,5 → 6,25 BTC)", "block": 630000, "reward": 6.25}, {"id": "mid3", "date": "2021-04-14", "kind": "tussentop", "price": 64800, "cycle": 3, "projectie": false, "label": "Tussentop april 2021", "block": null, "reward": null}, {"id": "top3", "date": "2021-11-10", "kind": "top", "price": 69000, "cycle": 3, "projectie": false, "label": "Top cyclus 3", "block": null, "reward": null}, {"id": "low3", "date": "2022-11-21", "kind": "bodem", "price": 15500, "cycle": 3, "projectie": false, "label": "Bodem cyclus 3 (FTX)", "block": null, "reward": null}, {"id": "mid3b", "date": "2024-03-14", "kind": "tussentop", "price": 73800, "cycle": 3, "projectie": false, "label": "ATH vóór de halving", "block": null, "reward": null}, {"id": "halving4", "date": "2024-04-20", "kind": "halving", "price": 64000, "cycle": 4, "projectie": false, "label": "Halving 4 (6,25 → 3,125 BTC)", "block": 840000, "reward": 3.125}, {"id": "top4", "date": "2025-10-06", "kind": "top", "price": 126080, "cycle": 4, "projectie": false, "label": "Top cyclus 4", "block": null, "reward": null}, {"id": "dip4", "date": "2026-02-05", "kind": "tussenbodem", "price": 60000, "cycle": 4, "projectie": false, "label": "Daling naar ±$60k", "block": null, "reward": null}, {"id": "low4a", "date": "2026-06-15", "kind": "tussenbodem", "price": 57700, "cycle": 4, "projectie": false, "label": "Low juni 2026", "block": null, "reward": null}, {"id": "low4", "date": "2026-11-21", "kind": "bodem", "price": 55106, "cycle": 4, "projectie": false, "label": "Cyclusbodem tot nu (voorlopig)", "block": null, "reward": null}, {"id": "now", "date": "2026-11-22", "kind": "nu", "price": 60849, "cycle": 4, "projectie": false, "label": "Prijs 22 november 2026", "block": null, "reward": null}, {"id": "halving5", "date": "2028-04-15", "kind": "halving", "price": null, "cycle": 5, "projectie": true, "label": "Halving 5, verwacht (3,125 → 1,5625 BTC)", "block": 1050000, "reward": 1.5625}, {"id": "top5", "date": "2029-08-15", "kind": "verwachte top", "price": 180000, "cycle": 5, "projectie": true, "label": "Richtpunt top Q3 2029: $180.000 (eigen schatting, geen voorspelling)", "block": null, "reward": null}];
 window.BTC_ANCHOR_DEFAULT = { price: 55106, date: '2026-11-21' };
 try {
   const a = JSON.parse(localStorage.getItem('btcHalvingAnchor') || 'null');
@@ -451,6 +452,20 @@ window.dash = (() => {
       <div><div class="cy-lbl">MVRV nu</div><div class="cy-num" id="bz-mvrv">—</div><div class="cy-sub">Bodemzone onder 1</div></div>
       <div><div class="cy-lbl">MVRV bij eerdere bodems</div><div class="cy-sub fut-big" id="bz-mvrv-hist">—</div></div>
     </div>
+    <h3 class="fut-h">Richtpunt top: <span id="bz-tg-title">$180.000 in Q3 2029</span></h3>
+    <p class="cy-note">De top- en bodemlijnen zijn rechte lijnen op logschaal door de hoogste en laagste MVRV van elke afgeronde cyclus sinds 2011. De toplijn zegt hoe hoog de MVRV bij de volgende top ongeveer komt; daaruit volgt welke realized price nodig is voor het richtpunt. Het schema loopt van de realized price op de cyclusbodem naar die nodige waarde. Een doorgetrokken trend, geen voorspelling.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">MVRV-toplijn bij het richtpunt</div><div class="cy-num" id="bz-tg-mvrv">—</div><div class="cy-sub" id="bz-tg-mvrv-sub">laden…</div></div>
+      <div><div class="cy-lbl">Nodige realized price</div><div class="cy-num" id="bz-tg-rp">—</div><div class="cy-sub" id="bz-tg-rp-sub">—</div></div>
+      <div><div class="cy-lbl">Nodige groei per jaar</div><div class="cy-num" id="bz-tg-cagr">—</div><div class="cy-sub" id="bz-tg-cagr-sub">—</div></div>
+      <div><div class="cy-lbl">Realized price op schema?</div><div class="cy-num" id="bz-tg-sched">—</div><div class="cy-sub" id="bz-tg-sched-sub">—</div></div>
+    </div>
+    <div class="cy-legend">
+      <span><i class="sw" style="background:var(--color-fg);opacity:.7"></i>MVRV</span>
+      <span><i class="sw proj" style="border-color:var(--color-bad)"></i>Toplijn</span>
+      <span><i class="sw proj" style="border-color:var(--color-ok)"></i>Bodemlijn</span>
+      <span><i class="sw ring top"></i>Richtpunt</span>
+    </div>
     <div class="cy-chart" id="bz-mvrv-chart"></div>
   </section>
   <section class="cy-card" id="indicatoren">
@@ -613,7 +628,7 @@ window.dash = (() => {
       <div><div class="cy-lbl">Trendwaarde vandaag</div><div class="cy-num" id="pl-fair">—</div><div class="cy-sub" id="pl-pos">—</div></div>
       <div><div class="cy-lbl">Vloer vandaag</div><div class="cy-num" id="pl-floor">—</div></div>
       <div><div class="cy-lbl">Plafond vandaag</div><div class="cy-num" id="pl-ceil">—</div></div>
-      <div><div class="cy-lbl">Rond de verwachte top (Q4 2029)</div><div class="cy-sub fut-big" id="pl-29">—</div></div>
+      <div><div class="cy-lbl">Rond de verwachte top (Q3 2029)</div><div class="cy-sub fut-big" id="pl-29">—</div></div>
     </div>
     <div class="cy-legend">
       <span><i class="sw" style="background:var(--color-bad)"></i>Plafond</span>
@@ -637,7 +652,7 @@ window.dash = (() => {
     <div class="cy-tiles fut-tiles">
       <div><div class="cy-lbl">Positie in de band</div><div class="cy-num" id="lgc-pos">—</div><div class="cy-sub">0% = bodemcurve, 100% = topcurve</div></div>
       <div><div class="cy-lbl">Bodemcurve vandaag</div><div class="cy-num" id="lgc-bot">—</div></div>
-      <div><div class="cy-lbl">Topcurve rond Q4 2029</div><div class="cy-num" id="lgc-top29">—</div></div>
+      <div><div class="cy-lbl">Topcurve rond Q3 2029</div><div class="cy-num" id="lgc-top29">—</div></div>
       <div><div class="cy-lbl">Bodemcurve rond 2030</div><div class="cy-num" id="lgc-bot30">—</div></div>
     </div>
     <div class="cy-chart" id="lgc-chart"></div>
@@ -847,7 +862,8 @@ dash.draw('chart', (el) => {
     const q0 = new Date(Date.UTC(pt.t.getUTCFullYear(), Math.floor(pt.t.getUTCMonth() / 3) * 3, 1));
     const q1 = d3.utcMonth.offset(q0, 3);
     svg.append('rect').attr('class', 'cy-projtop').attr('x', x(q0)).attr('width', x(q1) - x(q0)).attr('y', mt).attr('height', H - mb - mt);
-    svg.append('text').attr('class', 'cy-tick').attr('x', x(q0) - 3).attr('y', mt + 12).attr('text-anchor', 'end').text('top?');
+    svg.append('text').attr('class', 'cy-tick').attr('x', x(q0) - 3).attr('y', mt + 12).attr('text-anchor', 'end').text(pt.price ? 'top? ' + cy.usdS(pt.price) : 'top?');
+    if (pt.price) svg.append('circle').attr('r', 5).attr('cx', x(pt.t)).attr('cy', y(pt.price)).style('fill', 'var(--color-panel)').style('stroke', 'var(--color-bad)').attr('stroke-width', 2);
   }
 
   const pts = ev.filter((e) => e.price != null && !e.projectie).sort((a, b) => a.t - b.t);
@@ -1613,7 +1629,7 @@ window.hub = (() => {
     svg.append('line').attr('class', 'cy-ref').attr('x1', xn).attr('x2', xn).attr('y1', mt).attr('y2', H - mb);
     svg.append('text').attr('class', 'cy-tick').attr('x', xn + 4).attr('y', mt + 10).text('nu');
   };
-  const TOP_DATE = () => { const e = (cy.rows() || []).find((q) => q.kind === 'verwachte top'); return e ? e.t.getTime() : Date.UTC(2029, 10, 15); };
+  const TOP_DATE = () => { const e = (cy.rows() || []).find((q) => q.kind === 'verwachte top'); return e ? e.t.getTime() : Date.UTC(2029, 7, 15); };
 
   // 1) Power Law: log10(prijs) = a·log10(dagen sinds genesis) + b, met vloer en plafond uit de historische afwijkingen
   const renderPowerLaw = () => {
@@ -2016,7 +2032,7 @@ window.bodem = (() => {
 
   const loadCm = async () => {
     try {
-      const j = await json('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur,HashRate,IssTotUSD&frequency=1d&page_size=10000&start_time=2012-01-01');
+      const j = await json('https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?assets=btc&metrics=PriceUSD,CapMVRVCur,HashRate,IssTotUSD&frequency=1d&page_size=10000&start_time=2011-01-01');
       D.cm = j.data.map((d) => ({ t: Date.parse(d.time), p: +d.PriceUSD, mvrv: +d.CapMVRVCur, eh: +d.HashRate / 1e6, iss: +d.IssTotUSD })).filter((d) => d.p > 0 && d.mvrv > 0);
       // Puell Multiple = uitgifte in USD vandaag ÷ 365-daags gemiddelde daarvan; pu7 = 7-daags gemiddelde (minder ruis door het aantal blokken per dag)
       let sum = 0;
@@ -2409,19 +2425,68 @@ window.bodem = (() => {
     setText('bz-mvrv', d3.format('.2f')(rz.mvrv));
     const bm = bottomMvrv();
     setText('bz-mvrv-hist', bm.map((b) => `${b.y}: ${d3.format('.2f')(b.v)}`).join(' · ') || '—');
+    // Trendlijnen op logschaal door de hoogste/laagste MVRV per afgeronde cyclus (tussen twee opeenvolgende bodems)
+    const ev = cy.rows() || [];
+    const bods = ev.filter((e) => e.kind === 'bodem' && e.price != null && e.t.getTime() >= D.cm[0].t - 60 * DAY).sort((a, b) => a.t - b.t);
+    const lowPts = bods.filter((e) => e.cycle <= 3).map((e) => { const w = D.cm.filter((d) => Math.abs(d.t - e.t) < 45 * DAY); const m = d3.least(w, (d) => d.mvrv); return m ? { t: m.t, v: m.mvrv } : null; }).filter(Boolean);
+    const topPts = ev.filter((e) => e.kind === 'top' && e.cycle <= 4).map((e) => {
+      const prev = d3.greatest(bods.filter((b) => b.t < e.t), (b) => b.t), next = d3.least(bods.filter((b) => b.t > e.t), (b) => b.t);
+      const w = D.cm.filter((d) => d.t > (prev ? prev.t.getTime() : 0) && d.t < (next ? next.t.getTime() : Infinity));
+      const m = d3.greatest(w, (d) => d.mvrv); return m ? { t: m.t, v: m.mvrv } : null;
+    }).filter(Boolean);
+    const yrs = (t) => t / (365.25 * DAY);
+    const logFit = (pts) => { if (pts.length < 2) return null; const xs = pts.map((p) => yrs(p.t)), ys = pts.map((p) => Math.log(p.v)); const mx = d3.mean(xs), my = d3.mean(ys); const a = d3.sum(xs, (x, i) => (x - mx) * (ys[i] - my)) / d3.sum(xs, (x) => (x - mx) ** 2); return (t) => Math.exp(my + a * (yrs(t) - mx)); };
+    const topF = logFit(topPts), lowF = logFit(lowPts);
+    const tg = ev.find((e) => e.kind === 'verwachte top');
+    const low4E = ev.find((e) => e.id === 'low4'), cur4 = low4E ? (() => { const w = D.cm.filter((d) => Math.abs(d.t - low4E.t) < 45 * DAY); const m = d3.least(w, (d) => d.mvrv); return m ? { t: low4E.t.getTime(), v: m.mvrv } : null; })() : null;
+    if (tg && tg.price && topF) {
+      const tT = tg.t.getTime(), mvT = topF(tT), rpNeed = tg.price / mvT;
+      const q = `Q${Math.floor(tg.t.getUTCMonth() / 3) + 1} ${tg.t.getUTCFullYear()}`;
+      setText('bz-tg-title', `${usd(tg.price)} in ${q}`);
+      setText('bz-tg-mvrv', d3.format('.2f')(mvT));
+      setText('bz-tg-mvrv-sub', `Toplijn door ${topPts.map((p) => `${new Date(p.t).getUTCFullYear()} ${d3.format('.1f')(p.v)}`).join(', ')}`);
+      setText('bz-tg-rp', usd(Math.round(rpNeed / 100) * 100));
+      setText('bz-tg-rp-sub', `${usd(tg.price)} ÷ ${d3.format('.2f')(mvT)} · bij MVRV 2,3 (zoals 2025): ${usd(Math.round(tg.price / 2.3 / 100) * 100)}`);
+      const yLeft = Math.max(0.1, (tT - rz.t) / (365.25 * DAY)), need = Math.pow(rpNeed / rz.rp, 1 / yLeft) - 1;
+      const rpAt = (iso) => { const t = Date.parse(iso + 'T00:00:00Z'), d = d3.least(D.cm, (q2) => Math.abs(q2.t - t)); return d ? d.p / d.mvrv : null; };
+      const t3 = ev.find((e) => e.id === 'top3'), t4 = ev.find((e) => e.id === 'top4');
+      const prevC = t3 && t4 ? Math.pow(rpAt(t4.date) / rpAt(t3.date), 1 / ((t4.t - t3.t) / (365.25 * DAY))) - 1 : null;
+      setText('bz-tg-cagr', d3.format('+.0%')(need));
+      setText('bz-tg-cagr-sub', `Vanaf nu (${usd(Math.round(rz.rp))}) tot ${q}` + (prevC != null ? ` · vorige cyclus (top → top): ${d3.format('+.0%')(prevC)} per jaar` : ''));
+      const l4 = ev.find((e) => e.id === 'low4'), rp0 = l4 ? rpAt(l4.date) : null;
+      if (rp0 && l4.t.getTime() < tT) {
+        const frac = Math.min(1, Math.max(0, (rz.t - l4.t.getTime()) / (tT - l4.t.getTime())));
+        const sched = rp0 * Math.pow(rpNeed / rp0, frac), dev = rz.rp / sched - 1;
+        setText('bz-tg-sched', Math.abs(dev) < 0.005 ? 'Op schema' : pct(dev));
+        const se = $('bz-tg-sched'); if (se) se.style.color = dev >= -0.02 ? 'var(--color-ok)' : dev > -0.1 ? 'var(--color-warn)' : 'var(--color-bad)';
+        setText('bz-tg-sched-sub', `Nu ${usd(Math.round(rz.rp))} · schema ${usd(Math.round(sched))} (start ${usd(Math.round(rp0))} op ${cy.date(l4.date)})`);
+      }
+    }
     const el = $('bz-mvrv-chart'); if (!el || !hub.frame) return;
-    const rows = D.cm.filter((d) => d.t >= Date.UTC(2014, 0, 1));
-    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 220 : 260);
-    const ml = cy.measure(svg, '4.5') + 10, mr = 10, mt = 10, mb = 26;
-    const x = d3.scaleUtc([new Date(rows[0].t), new Date(rows[rows.length - 1].t)], [ml, W - mr]);
-    const y = d3.scaleLinear([0.4, d3.max(rows, (r) => r.mvrv) * 1.05], [H - mb, mt]);
+    const rows = D.cm.filter((d) => d.t >= Date.UTC(2013, 0, 1));
+    const { W, H, svg } = hub.frame(el, (el.clientWidth || 600) < 520 ? 260 : 300);
+    const ml = cy.measure(svg, '0.5') + 12, mr = 12, mt = 12, mb = 26;
+    const tEnd = Math.max(Date.UTC(2030, 0, 1), tg ? tg.t.getTime() + 120 * DAY : 0);
+    const x = d3.scaleUtc([new Date(rows[0].t), new Date(tEnd)], [ml, W - mr]);
+    const y = d3.scaleLog([0.4, Math.max(8, d3.max(rows, (r) => r.mvrv) * 1.1)], [H - mb, mt]).clamp(true);
     svg.append('rect').attr('class', 'bz-mvrv-low').attr('x', ml).attr('width', W - mr - ml).attr('y', y(1)).attr('height', y(0.4) - y(1));
-    const yt = [0.5, 1, 2, 3, 4].filter((v) => v <= y.domain()[1]);
+    const yt = [0.5, 1, 2, 4, 8].filter((v) => v <= y.domain()[1]);
     svg.append('g').selectAll('line').data(yt).join('line').attr('class', (d) => d === 1 ? 'cy-ref' : 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
     svg.append('g').selectAll('text').data(yt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
     hub.timeAxis(svg, x, W, H);
+    const grid = d3.range(rows[0].t, tEnd, 30 * DAY);
+    const tl = (f, color) => { if (f) svg.append('path').attr('fill', 'none').style('stroke', color).attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4').attr('d', d3.line((t) => x(new Date(t)), (t) => y(f(t)))(grid)); };
+    tl(topF, 'var(--color-bad)'); tl(lowF, 'var(--color-ok)');
     svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.7).attr('stroke-width', 1.2).attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.mvrv))(rows));
-    hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `MVRV ${d3.format('.2f')(r.mvrv)}`, `Realized price ${usd(Math.round(r.p / r.mvrv))}`]);
+    svg.append('g').selectAll('circle').data(topPts.filter((p) => p.t >= rows[0].t)).join('circle').attr('r', 4).attr('cx', (p) => x(new Date(p.t))).attr('cy', (p) => y(p.v)).attr('class', 'cy-pt k-top');
+    svg.append('g').selectAll('circle').data(lowPts.filter((p) => p.t >= rows[0].t).concat(cur4 ? [cur4] : [])).join('circle').attr('r', 4).attr('cx', (p) => x(new Date(p.t))).attr('cy', (p) => y(p.v)).attr('class', 'cy-pt k-bodem');
+    if (tg && tg.price && topF) {
+      const tx = x(tg.t), ty = y(topF(tg.t.getTime()));
+      svg.append('circle').attr('r', 6).attr('cx', tx).attr('cy', ty).style('fill', 'var(--color-panel)').style('stroke', 'var(--color-bad)').attr('stroke-width', 2);
+      svg.append('text').attr('class', 'cy-lab').attr('x', tx).attr('y', ty - 11).attr('text-anchor', 'end').text(`${cy.usdS(tg.price)} · MVRV ${d3.format('.2f')(topF(tg.t.getTime()))}`);
+    }
+    const xn = x(new Date()); svg.append('line').attr('class', 'cy-ref').attr('x1', xn).attr('x2', xn).attr('y1', mt).attr('y2', H - mb);
+    hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `MVRV ${d3.format('.2f')(r.mvrv)}`, `Realized price ${usd(Math.round(r.p / r.mvrv))}`, ...(topF ? [`Toplijn ${d3.format('.2f')(topF(r.t))} · bodemlijn ${d3.format('.2f')(lowF(r.t))}`] : [])]);
   };
 
 
