@@ -184,6 +184,10 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .cy-nav a{flex:0 0 auto;padding:6px 12px;border-radius:999px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);text-decoration:none;border:1px solid var(--color-border-line);background:var(--color-panel);white-space:nowrap}
 .cy-nav a.on{color:var(--color-bg);background:var(--color-fg);border-color:var(--color-fg)}
 .cy section[id],.cy header[id]{scroll-margin-top:64px}
+.koers-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--color-border-line);border-radius:999px;padding:2px;background:var(--color-bg)}
+.cy .seg button{border:0;background:transparent;border-radius:999px;padding:5px 12px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.cy .seg button.on{background:var(--color-fg);color:var(--color-bg)}
 .cy-tab{display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
 .cy-tab[hidden]{display:none}
 .bz-more{margin-top:var(--cds-gap-md);border-top:1px solid var(--color-border-line);padding-top:var(--cds-gap-sm)}
@@ -491,8 +495,8 @@ window.dash = (() => {
   </div>
   <div class="cy-tab" data-tab="cyclus" id="t-cyclus">
   <section class="cy-card" id="koers">
-    <h2>Koers sinds 2010 met de vier halvings</h2>
-    <p class="cy-note">Logaritmische schaal: elke rasterlijn is tien keer de vorige. Rode banden zijn de bearmarkten van top naar bodem. <span id="koers-src">Pivotpunten verbonden met rechte lijnen; dagkoers laden…</span></p>
+    <div class="koers-head"><h2>Koers en halvings</h2><div class="seg" id="koers-range" role="group" aria-label="Periode"><button type="button" data-r="cyclus">Deze cyclus</button><button type="button" data-r="all">Sinds 2010</button></div></div>
+    <p class="cy-note">Logaritmische schaal. Rode banden zijn de bearmarkten van top naar bodem. <span id="koers-src">Pivotpunten verbonden met rechte lijnen; dagkoers laden…</span></p>
     <div class="cy-legend">
       <span><i class="sw top"></i>Cyclustop</span>
       <span><i class="sw bodem"></i>Bodem</span>
@@ -834,67 +838,103 @@ dash.draw('cd-pct', (el) => {
 dash.draw('chart', (el) => {
   const ev = cy.rows(); if (!cy.ready(el, ev)) return;
   el.replaceChildren();
-  const W = el.clientWidth || 600, H = W < 520 ? 300 : 400;
+  const W = el.clientWidth || 600, narrow = W < 520, H = narrow ? 320 : 400;
+  let mode = window.btcKoersMode || null; if (!mode) try { mode = localStorage.getItem('btcKoersRange'); } catch (e) { /* */ }
+  if (mode !== 'all' && mode !== 'cyclus') mode = narrow ? 'cyclus' : 'all';
+  document.querySelectorAll('#koers-range button').forEach((bt) => bt.classList.toggle('on', bt.dataset.r === mode));
   const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
   const ml = cy.measure(svg, '$100k') + 10, mr = 14, mt = 22, mb = 26;
-  const x = d3.scaleUtc([new Date(Date.UTC(2009, 6, 1)), new Date(Date.UTC(2030, 0, 1))], [ml, W - mr]);
-  const y = d3.scaleLog([0.03, 300000], [H - mb, mt]);
-  const ticks = [0.1, 1, 10, 100, 1000, 10000, 100000];
-  svg.append('g').selectAll('line').data(ticks).join('line').attr('class', 'cy-gl')
-    .attr('x1', ml).attr('x2', W - mr).attr('y1', (d) => y(d)).attr('y2', (d) => y(d));
-  svg.append('g').selectAll('text').data(ticks).join('text').attr('class', 'cy-tick')
-    .attr('x', ml - 6).attr('y', (d) => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end')
+  const pt = ev.find((e) => e.kind === 'verwachte top');
+  const h5p = ev.find((e) => e.id === 'halving5' && e.price != null), nowP = ev.find((e) => e.kind === 'nu' && e.price != null);
+  const real = window.hub && window.hub.state.daily ? window.hub.state.daily.rows.filter((r) => r.close >= 0.03) : null;
+  const t0 = mode === 'cyclus' ? Date.UTC(2022, 0, 1) : Date.UTC(2009, 6, 1);
+  const t1 = Math.max(Date.UTC(2030, 0, 1), pt ? d3.utcMonth.offset(pt.t, 5).getTime() : 0);
+  const x = d3.scaleUtc([new Date(t0), new Date(t1)], [ml, W - mr]);
+  let y, ticks;
+  if (mode === 'cyclus') {
+    const vals = ev.filter((e) => e.price != null && e.t.getTime() >= t0).map((e) => e.price).concat(real ? real.filter((r) => r.t >= t0).map((r) => r.close) : []);
+    y = d3.scaleLog([d3.min(vals) * 0.75, d3.max(vals) * 1.3], [H - mb, mt]);
+    ticks = [10000, 20000, 50000, 100000, 200000, 500000].filter((v) => v >= y.domain()[0] && v <= y.domain()[1]);
+  } else {
+    y = d3.scaleLog([0.03, 300000], [H - mb, mt]);
+    ticks = [0.1, 1, 10, 100, 1000, 10000, 100000];
+  }
+  const inX = (t) => +t >= t0 && +t <= t1;
+  svg.append('g').selectAll('line').data(ticks).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', y).attr('y2', y);
+  svg.append('g').selectAll('text').data(ticks).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end')
     .text((d) => d < 1 ? '$0.1' : '$' + d3.format('~s')(d));
-  const step = W < 520 ? 4 : 2;
-  svg.append('g').selectAll('text').data(d3.range(2010, 2031, step)).join('text').attr('class', 'cy-tick')
+  const y0 = new Date(t0).getUTCFullYear() + (new Date(t0).getUTCMonth() ? 1 : 0), y1 = new Date(t1).getUTCFullYear();
+  const step = mode === 'cyclus' ? (narrow ? 2 : 1) : (narrow ? 4 : 2);
+  svg.append('g').selectAll('text').data(d3.range(y0 + ((y0 % step) ? step - (y0 % step) : 0), y1 + 1, step)).join('text').attr('class', 'cy-tick')
     .attr('x', (d) => x(new Date(Date.UTC(d, 0, 1)))).attr('y', H - 8).attr('text-anchor', 'middle').text((d) => d);
+  svg.append('defs').append('clipPath').attr('id', 'koers-clip').append('rect').attr('x', ml).attr('y', 0).attr('width', W - mr - ml).attr('height', H);
+  const plot = svg.append('g').attr('clip-path', 'url(#koers-clip)');
 
   const tops = ev.filter((e) => e.kind === 'top');
-  const bands = tops.map((t) => ({ t, b: ev.filter((e) => e.kind === 'bodem' && e.cycle === t.cycle && e.t > t.t).sort((a, b) => a.price - b.price)[0] })).filter((d) => d.b);
-  svg.append('g').selectAll('rect').data(bands).join('rect').attr('class', 'cy-bear')
+  const bands = tops.map((t) => ({ t, b: ev.filter((e) => e.kind === 'bodem' && e.cycle === t.cycle && e.t > t.t).sort((p, q) => p.price - q.price)[0] })).filter((d) => d.b);
+  plot.append('g').selectAll('rect').data(bands).join('rect').attr('class', 'cy-bear')
     .attr('x', (d) => x(d.t.t)).attr('width', (d) => Math.max(1, x(d.b.t) - x(d.t.t))).attr('y', mt).attr('height', H - mb - mt);
-
-  const hv = ev.filter((e) => e.kind === 'halving').sort((a, b) => a.t - b.t);
-  const hg = svg.append('g').selectAll('g').data(hv).join('g').attr('class', (d) => d.projectie ? 'cy-hv proj' : 'cy-hv');
+  const hv = ev.filter((e) => e.kind === 'halving').sort((p, q) => p.t - q.t);
+  const hg = svg.append('g').selectAll('g').data(hv.map((d, i) => ({ ...d, n: i + 1 })).filter((d) => inX(d.t))).join('g').attr('class', (d) => d.projectie ? 'cy-hv proj' : 'cy-hv');
   hg.append('line').attr('x1', (d) => x(d.t)).attr('x2', (d) => x(d.t)).attr('y1', mt).attr('y2', H - mb);
-  hg.append('text').attr('x', (d) => x(d.t)).attr('y', mt - 8).attr('text-anchor', 'middle').text((d, i) => 'H' + (i + 1));
-
-  const pt = ev.find((e) => e.kind === 'verwachte top');
-  if (pt) {
-    const q0 = new Date(Date.UTC(pt.t.getUTCFullYear(), Math.floor(pt.t.getUTCMonth() / 3) * 3, 1));
-    const q1 = d3.utcMonth.offset(q0, 3);
-    svg.append('rect').attr('class', 'cy-projtop').attr('x', x(q0)).attr('width', x(q1) - x(q0)).attr('y', mt).attr('height', H - mb - mt);
-    svg.append('text').attr('class', 'cy-tick').attr('x', x(q0) - 3).attr('y', mt + 12).attr('text-anchor', 'end').text(pt.price ? 'top? ' + cy.usdS(pt.price) : 'top?');
-    if (pt.price) svg.append('circle').attr('r', 5).attr('cx', x(pt.t)).attr('cy', y(pt.price)).style('fill', 'var(--color-panel)').style('stroke', 'var(--color-bad)').attr('stroke-width', 2);
-    // verwacht pad: nu → halving 5 → top (eigen richtpunten)
-    const h5p = ev.find((e) => e.id === 'halving5' && e.price != null), nowP = ev.find((e) => e.kind === 'nu' && e.price != null);
-    if (h5p && pt.price && nowP) {
-      svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4').attr('opacity', 0.9)
-        .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))([nowP, h5p, pt]));
-      svg.append('circle').attr('r', 5).attr('cx', x(h5p.t)).attr('cy', y(h5p.price)).style('fill', 'var(--color-panel)').style('stroke', 'var(--color-warn)').attr('stroke-width', 2);
-      svg.append('text').attr('class', 'cy-lab').attr('x', x(h5p.t)).attr('y', y(h5p.price) + 17).attr('text-anchor', 'middle').text(cy.usdS(h5p.price));
-    }
+  hg.append('text').attr('x', (d) => x(d.t)).attr('y', mt - 8).attr('text-anchor', 'middle').text((d) => 'H' + d.n);
+  if (pt && inX(pt.t)) {
+    const q0 = new Date(Date.UTC(pt.t.getUTCFullYear(), Math.floor(pt.t.getUTCMonth() / 3) * 3, 1)), q1 = d3.utcMonth.offset(q0, 3);
+    plot.append('rect').attr('class', 'cy-projtop').attr('x', x(q0)).attr('width', x(q1) - x(q0)).attr('y', mt).attr('height', H - mb - mt);
   }
 
-  const pts = ev.filter((e) => e.price != null && !e.projectie).sort((a, b) => a.t - b.t);
-  const real = window.hub && window.hub.state.daily ? window.hub.state.daily.rows.filter((r) => r.close >= 0.03) : null;
+  const pts = ev.filter((e) => e.price != null && !e.projectie).sort((p, q) => p.t - q.t);
   if (real && real.length) {
-    const t0 = real[0].t;
-    const before = pts.filter((d) => d.t.getTime() <= t0);
-    if (before.length) svg.append('path').attr('class', 'cy-line').attr('stroke-dasharray', '4 3').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(before.concat([{ t: new Date(t0), price: real[0].close }])));
-    svg.append('path').attr('class', 'cy-real').attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.close))(real));
+    const r0 = real[0].t, before = pts.filter((d) => d.t.getTime() <= r0);
+    if (before.length) plot.append('path').attr('class', 'cy-line').attr('stroke-dasharray', '4 3').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(before.concat([{ t: new Date(r0), price: real[0].close }])));
+    plot.append('path').attr('class', 'cy-real').attr('d', d3.line((r) => x(new Date(r.t)), (r) => y(r.close))(real.filter((r) => r.t >= t0 - 40 * 864e5)));
   } else {
-    svg.append('path').attr('class', 'cy-line').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(pts));
+    plot.append('path').attr('class', 'cy-line').attr('d', d3.line((d) => x(d.t), (d) => y(d.price))(pts));
   }
-  svg.append('g').selectAll('path').data(pts).join('path')
+  // verwacht pad: nu → halving 5 → top (eigen richtpunten)
+  const proj = [];
+  if (nowP && h5p && pt && pt.price) {
+    plot.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', 2).attr('stroke-dasharray', '6 4')
+      .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))([nowP, h5p, pt]));
+    proj.push({ e: h5p, color: 'var(--color-warn)', txt: 'H5 ' + cy.usdS(h5p.price) }, { e: pt, color: 'var(--color-bad)', txt: 'top ' + cy.usdS(pt.price) });
+    svg.append('g').selectAll('circle').data(proj).join('circle').attr('r', 5.5).attr('cx', (d) => x(d.e.t)).attr('cy', (d) => y(d.e.price))
+      .style('fill', 'var(--color-panel)').style('stroke', (d) => d.color).attr('stroke-width', 2.2);
+  }
+  const vis = pts.filter((d) => inX(d.t));
+  svg.append('g').selectAll('path').data(vis).join('path')
     .attr('class', (d) => 'cy-pt k-' + d.kind.replace(' ', '-'))
     .attr('transform', (d) => `translate(${x(d.t)},${y(d.price)})`)
-    .attr('d', (d) => d3.symbol(d.kind === 'halving' ? d3.symbolDiamond : d3.symbolCircle, d.kind === 'top' || d.kind === 'bodem' ? 64 : 40)());
-  svg.append('g').selectAll('text').data(pts.filter((d) => d.kind === 'top' || d.kind === 'bodem' || d.kind === 'nu')).join('text')
-    .attr('class', 'cy-lab').attr('x', (d) => x(d.t)).attr('y', (d) => y(d.price) + (d.kind === 'bodem' ? 17 : -10))
-    .attr('text-anchor', 'middle').text((d) => cy.usdS(d.price));
+    .attr('d', (d) => d3.symbol(d.kind === 'halving' ? d3.symbolDiamond : d3.symbolCircle, d.kind === 'top' || d.kind === 'bodem' || d.kind === 'nu' ? 70 : 40)());
 
-  cy.hover(el, svg, W, H, pts, (d) => x(d.t), (d) => y(d.price), (d) => [`${cy.date(d.date)} · ${d.label}`, cy.usd(d.price)]);
+  // labels zonder overlap: in volgorde van belang plaatsen; wat niet past, schuift naar een andere kant of valt weg
+  const M = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const cand = [];
+  vis.forEach((d) => {
+    const k = d.kind;
+    if (k === 'nu') cand.push({ d, txt: 'nu ' + cy.usdS(d.price), prio: 0, pref: 'up' });
+    else if (k === 'top') cand.push({ d, txt: cy.usdS(d.price), prio: d.cycle >= 3 ? 1 : 3, pref: 'up' });
+    else if (k === 'bodem') cand.push({ d, txt: cy.usdS(d.price), prio: d.cycle >= 3 ? 1 : 3, pref: 'down' });
+    else if (mode === 'cyclus' && (k === 'tussenbodem' || k === 'tussentop')) cand.push({ d, txt: `${M[d.t.getUTCMonth()]} ${cy.usdS(d.price)}`, prio: 4, pref: k === 'tussenbodem' ? 'down' : 'up' });
+  });
+  proj.forEach((p) => cand.push({ d: p.e, txt: p.txt, prio: 0.5, pref: 'up', color: p.color }));
+  const placed = [{ x0: 0, x1: W, y0: 0, y1: mt - 2 }];
+  vis.concat(proj.map((q) => q.e)).forEach((d) => { const px = x(d.t), py = y(d.price); placed.push({ x0: px - 6, x1: px + 6, y0: py - 6, y1: py + 6 }); });   // punten zelf vrijhouden
+  const hit = (b) => b.x0 < ml - 2 || b.x1 > W - 2 || b.y1 > H - mb + 4 || placed.some((q) => b.x0 < q.x1 && b.x1 > q.x0 && b.y0 < q.y1 && b.y1 > q.y0);
+  cand.sort((p, q) => p.prio - q.prio).forEach((c) => {
+    const cx = x(c.d.t), cyy = y(c.d.price), w = cy.measure(svg, c.txt) + 6, h = 14;
+    const pos = { up: [cx - w / 2, cyy - 10 - h], down: [cx - w / 2, cyy + 8], left: [cx - 9 - w, cyy - h / 2], right: [cx + 9, cyy - h / 2] };
+    const order = [c.pref, c.pref === 'up' ? 'down' : 'up', 'left', 'right'];
+    for (const o of order) {
+      const [bx, by] = pos[o], box = { x0: bx, x1: bx + w, y0: by, y1: by + h };
+      if (!hit(box)) {
+        placed.push(box);
+        const t = svg.append('text').attr('class', 'cy-lab').attr('x', bx + w / 2).attr('y', by + h - 3).attr('text-anchor', 'middle').text(c.txt);
+        if (c.color) t.style('fill', c.color).style('font-weight', 600);
+        break;
+      }
+    }
+  });
+  cy.hover(el, svg, W, H, vis.concat(proj.map((p) => p.e)), (d) => x(d.t), (d) => y(d.price), (d) => [`${cy.date(d.date)} · ${d.label}`, cy.usd(d.price)]);
 });
 </script>
 
@@ -2668,6 +2708,14 @@ window.bodem = (() => {
 })();
 </script>
 
+<script>
+// Koersgrafiek: periode kiezen (deze cyclus / sinds 2010), onthouden op dit toestel
+document.querySelectorAll('#koers-range button').forEach((bt) => bt.addEventListener('click', () => {
+  window.btcKoersMode = bt.dataset.r;
+  try { localStorage.setItem('btcKoersRange', bt.dataset.r); } catch (e) { /* */ }
+  dash.redraw();
+}));
+</script>
 <script>
 // ---- Tabbladen: één groep tegelijk; #t-naam opent een tabblad, #sectie-id opent het tabblad van die sectie ----
 (() => {
