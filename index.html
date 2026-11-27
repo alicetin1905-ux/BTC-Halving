@@ -504,7 +504,7 @@ window.dash = (() => {
       <span><i class="sw ring bodem"></i>Tussenbodem</span>
       <span><i class="sw halving"></i>Halving</span>
       <span><i class="sw bear"></i>Bearmarkt</span>
-      <span><i class="sw proj" style="border-color:var(--color-warn)"></i>Verwacht pad (richtpunten $126k bij H5, $180k top)</span>
+      <span><i class="sw" style="background:var(--color-warn);opacity:.75;border-radius:2px;height:3px;width:14px"></i>Verwacht pad: vorm van de vorige cyclus, naar $126k bij H5 en $180k top</span>
     </div>
     <div class="cy-chart" data-draw="chart" data-source="events"></div>
   </section>
@@ -894,8 +894,30 @@ dash.draw('chart', (el) => {
   // verwacht pad: nu → halving 5 → top (eigen richtpunten)
   const proj = [];
   if (nowP && h5p && pt && pt.price) {
-    plot.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', 2).attr('stroke-dasharray', '6 4')
-      .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))([nowP, h5p, pt]));
+    // Pad met de vorm van de vorige cyclus (bodem → halving → top), geschaald tussen nu, het halving-richtpunt en de top.
+    // Per stuk: afwijking van de rechte lijn (op logschaal) in de oude cyclus × 0,8, opgeteld bij de rechte lijn tussen de nieuwe punten.
+    const DAYMS = 864e5, get = (id) => ev.find((e) => e.id === id);
+    const L3 = get('low3'), H4 = get('halving4'), T4 = get('top4'), L4 = get('low4');
+    let path = null;
+    if (real && real.length && L3 && H4 && T4 && L4 && real[0].t < +L3.t) {
+      const bis = d3.bisector((q) => q.t).left;
+      const logAt = (t) => { const i = bis(real, t - 3 * DAYMS), w = real.slice(i, i + 7).filter((q) => Math.abs(q.t - t) <= 3 * DAYMS); return w.length ? d3.mean(w, (q) => Math.log(q.close)) : null; };
+      const seg = (hA, hB, nA, pA, nB, pB, f0) => {
+        const la = logAt(hA), lb = logAt(hB); if (la == null || lb == null) return null;
+        const dev = (ft) => { const v = logAt(hA + ft * (hB - hA)); return v == null ? 0 : v - (la + ft * (lb - la)); };
+        const d0 = dev(f0), n = Math.max(10, Math.round((nB - nA) / (5 * DAYMS))), out = [];
+        for (let i = 0; i <= n; i++) {
+          const f = i / n, ft = f0 + f * (1 - f0);
+          out.push({ t: new Date(nA + f * (nB - nA)), price: Math.exp(Math.log(pA) + f * (Math.log(pB) - Math.log(pA)) + 0.8 * (dev(ft) - d0 * (1 - f))) });
+        }
+        return out;
+      };
+      const f0 = Math.min(0.9, Math.max(0, (+nowP.t - +L4.t) / (+h5p.t - +L4.t)));
+      const a = seg(+L3.t, +H4.t, +nowP.t, nowP.price, +h5p.t, h5p.price, f0), b = seg(+H4.t, +T4.t, +h5p.t, h5p.price, +pt.t, pt.price, 0);
+      if (a && b) path = a.concat(b.slice(1));
+    }
+    plot.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', path ? 1.8 : 2).attr('stroke-opacity', path ? 0.75 : 1).attr('stroke-dasharray', path ? null : '6 4').attr('stroke-linejoin', 'round')
+      .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))(path || [nowP, h5p, pt]));
     proj.push({ e: h5p, color: 'var(--color-warn)', txt: 'H5 ' + cy.usdS(h5p.price) }, { e: pt, color: 'var(--color-bad)', txt: 'top ' + cy.usdS(pt.price) });
     svg.append('g').selectAll('circle').data(proj).join('circle').attr('r', 5.5).attr('cx', (d) => x(d.e.t)).attr('cy', (d) => y(d.e.price))
       .style('fill', 'var(--color-panel)').style('stroke', (d) => d.color).attr('stroke-width', 2.2);
