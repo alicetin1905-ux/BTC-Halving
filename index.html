@@ -230,7 +230,7 @@ html{scroll-behavior:smooth}
 #bz-chart{min-height:340px}
 #bz-hr-chart,#bz-liq-chart,#bz-mvrv-chart,#bz-puell-chart{min-height:240px}
 #bz-mvrv-chart{min-height:280px}
-#rsi-chart{min-height:340px}
+#rsi-chart{min-height:460px}
 .rsi-os{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
 .rsi-ob{fill:color-mix(in srgb,var(--color-bad) 8%,transparent)}
 .bz-pu-low{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
@@ -409,20 +409,24 @@ window.dash = (() => {
     </details>
   </section>
   <section class="cy-card" id="rsi">
-    <div class="koers-head"><h2>Wekelijkse RSI</h2><div class="seg" id="rsi-range" role="group" aria-label="Periode"><button type="button" data-r="cyclus">Sinds 2021</button><button type="button" data-r="all">Sinds 2013</button></div></div>
-    <p class="cy-note">RSI (14 weken) op de weeksluitingen (Coin Metrics). Onder 30 is BTC op weekbasis zwaar oververkocht: daar lagen de bodems van 2015, 2018 en 2022. Een <b>bullish divergentie</b> (groene lijn) betekent dat de prijs een lagere of gelijke bodem maakt terwijl de RSI een hogere bodem maakt: de verkoopdruk neemt af. Dat ging vooraf aan de bodem van 2022.</p>
+    <div class="koers-head"><h2>Weekgrafiek: RSI, MACD en trend</h2><div class="seg" id="rsi-range" role="group" aria-label="Periode"><button type="button" data-r="cyclus">Sinds 2021</button><button type="button" data-r="all">Sinds 2013</button></div></div>
+    <p class="cy-note">Indicatoren op de weeksluitingen (Coin Metrics). Een <b>bullish divergentie</b> (groene lijn) betekent dat de prijs een lagere of gelijke bodem maakt terwijl de indicator een hogere bodem maakt: de verkoopdruk neemt af. Dat ging vooraf aan de bodem van 2022. Stoch RSI-kruising en TD 9 markeren uitputting; de Bull Market Support Band (20W SMA / 21W EMA) heroveren bevestigt achteraf dat de bodem achter de rug is.</p>
     <div class="cy-tiles fut-tiles">
       <div><div class="cy-lbl">RSI nu (week)</div><div class="cy-num" id="rsi-now">—</div><div class="cy-sub" id="rsi-now-sub">laden…</div></div>
-      <div><div class="cy-lbl">Laagste deze cyclus</div><div class="cy-num" id="rsi-min">—</div><div class="cy-sub" id="rsi-min-sub">—</div></div>
-      <div><div class="cy-lbl">Bullish divergentie</div><div class="cy-num" id="rsi-div">—</div><div class="cy-sub" id="rsi-div-sub">—</div></div>
+      <div><div class="cy-lbl">Laagste RSI deze cyclus</div><div class="cy-num" id="rsi-min">—</div><div class="cy-sub" id="rsi-min-sub">—</div></div>
       <div><div class="cy-lbl">RSI bij eerdere bodems</div><div class="cy-sub fut-big" id="rsi-hist">—</div></div>
     </div>
-    <div class="cy-legend">
-      <span><i class="sw" style="background:var(--color-fg);opacity:.6"></i>Weekslot (boven)</span>
-      <span><i class="sw" style="background:#a78bfa"></i>RSI 14 weken (onder)</span>
-      <span><i class="sw bull"></i>Oververkocht (onder 30)</span>
-      <span><i class="sw bodem"></i>RSI-bodem</span>
+    <h3 class="fut-h">Weeksignalen <span class="bz-score" id="wk-score"></span></h3>
+    <div class="ind-tiles" id="wk-sig"></div>
+    <div class="cy-legend" style="margin-top:var(--cds-gap-md)">
+      <span><i class="sw" style="background:var(--color-fg);opacity:.6"></i>Weekslot</span>
+      <span><i class="sw" style="background:var(--color-warn);opacity:.45;border-radius:2px"></i>Bull Market Support Band</span>
+      <span><i class="sw proj" style="border-color:#5b8def"></i>2-jaars gemiddelde</span>
+      <span><i class="sw" style="background:#a78bfa"></i>RSI 14w</span>
+      <span><i class="sw" style="background:var(--color-fg)"></i>MACD · <i class="sw" style="background:var(--color-warn)"></i> signaal</span>
       <span><i class="sw" style="background:var(--color-ok);height:3px;border-radius:2px;width:14px"></i>Bullish divergentie</span>
+      <span style="color:var(--color-ok);font-weight:600">▲</span><span>Stoch RSI kruist omhoog</span>
+      <span style="color:var(--color-ok);font-weight:600">9</span><span>TD-koopsetup</span>
     </div>
     <div class="cy-chart" id="rsi-chart"></div>
   </section>
@@ -712,7 +716,7 @@ window.dash = (() => {
     </details>
     <details class="al-tg">
       <summary>Bodemsignalen bij elke verandering (ook met de app dicht)</summary>
-      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de acht kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, Puell Multiple, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen, 10+ dagen extreme angst in een maand en een bullish divergentie op de wekelijkse RSI. Zakt BTC onder de cyclusbodem (de laagste koers sinds de top), dan krijg je een aparte melding "Nieuwe cyclus-low" (opnieuw bij elke 2% lager). Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
+      <p class="cy-note">Elke 3 uur controleert GitHub de signalen uit de sectie Bodem 2026: de acht kapitulatiesignalen (200WMA, MVRV, hash ribbons, miner-kostprijs, Puell Multiple, funding, Fear &amp; Greed, moeilijkheid), plus een dip van 20% onder de top van 120 dagen, 10+ dagen extreme angst in een maand, en de weeksignalen: bullish divergentie op RSI en MACD, Stoch RSI-kruising omhoog, TD-koopsetup 9, weekslot onder het 2-jaars gemiddelde en weekslot boven de Bull Market Support Band (die laatste bevestigt de trendomslag). Zakt BTC onder de cyclusbodem (de laagste koers sinds de top), dan krijg je een aparte melding "Nieuwe cyclus-low" (opnieuw bij elke 2% lager). Gaat er een signaal aan of uit, dan krijg je een ntfy-melding met het volledige overzicht; bij 5 of meer tegelijk met de hoogste prioriteit. Een kleine marge voorkomt meldingen bij elke schommeling rond een grens. Gebruikt hetzelfde secret <b>NTFY_TOPIC</b>. De eerste run stuurt een overzicht om te bevestigen dat het werkt; daarna komt er alleen iets bij een verandering. Testen kan via Actions → "Bodemsignalen naar ntfy" → Run workflow (kies <b>status</b> voor een overzicht). Miner-kostprijs aanpassen: repository-variabelen <b>MINER_JTH</b> en <b>MINER_KWH</b>.</p>
     </details>
     <details class="al-tg">
       <summary>Telegram (optioneel)</summary>
@@ -2510,84 +2514,115 @@ window.bodem = (() => {
     hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `Puell ${d3.format('.2f')(r.pu7)}`, `Prijs ${usd(Math.round(r.p))}`]);
   };
 
-  // ---- Wekelijkse RSI (14) met bodems en bullish divergenties ----
-  const weeklyRsi = () => {
+  // ---- Weekgrafiek: RSI, MACD, Stoch RSI, TD Sequential, Bull Market Support Band, 2-jaars gemiddelde ----
+  const weekly = () => {
     if (!D.cm || !D.cm.length) return null;
-    const wk = D.cm.filter((d) => new Date(d.t).getUTCDay() === 0).map((d) => ({ t: d.t, c: d.p }));
-    const calc = (arr) => { const N = 14; let g = 0, l = 0; return arr.map((w, i) => { if (!i) return { ...w, rsi: null }; const ch = w.c - arr[i - 1].c, up = Math.max(ch, 0), dn = Math.max(-ch, 0); if (i <= N) { g += up / N; l += dn / N; } else { g = (g * (N - 1) + up) / N; l = (l * (N - 1) + dn) / N; } return { ...w, rsi: i >= N ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null }; }); };
-    const rows = calc(wk), P = price(), last = wk[wk.length - 1];
-    const live = P && Date.now() - last.t > DAY ? calc(wk.concat([{ t: Date.now(), c: P }])).pop() : null;
-    // laagste dagslot binnen ±7 dagen (prijsbodem bij een RSI-bodem)
+    const rows = D.cm.filter((d) => new Date(d.t).getUTCDay() === 0).map((d) => ({ t: d.t, c: d.p }));
+    const n = rows.length, C = rows.map((r) => r.c);
+    const ema = (a, k) => { let m = null; return a.map((v) => (m = m == null ? v : v * 2 / (k + 1) + m * (1 - 2 / (k + 1)))); };
+    const sma = (a, k) => a.map((v, i) => (i < k - 1 || a.slice(i - k + 1, i + 1).some((q) => q == null) ? null : d3.mean(a.slice(i - k + 1, i + 1))));
+    // RSI 14 (Wilder)
+    const N = 14; let g = 0, l = 0; const rsi = C.map((c, i) => { if (!i) return null; const ch = c - C[i - 1], up = Math.max(ch, 0), dn = Math.max(-ch, 0); if (i <= N) { g += up / N; l += dn / N; } else { g = (g * (N - 1) + up) / N; l = (l * (N - 1) + dn) / N; } return i >= N ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null; });
+    const e12 = ema(C, 12), e26 = ema(C, 26), macd = C.map((c, i) => e12[i] - e26[i]), sig = ema(macd, 9);
+    const srsi = rsi.map((v, i) => { const w = rsi.slice(Math.max(0, i - 13), i + 1).filter((q) => q != null); return v == null || w.length < 14 ? null : (d3.max(w) === d3.min(w) ? 0 : (v - d3.min(w)) / (d3.max(w) - d3.min(w)) * 100); });
+    const K = sma(srsi, 3), Dl = sma(K, 3), s20 = sma(C, 20), e21 = ema(C, 21), ma104 = sma(C, 104);
+    let td = 0; const tdc = C.map((c, i) => (td = i >= 4 && c < C[i - 4] ? td + 1 : 0));
+    rows.forEach((r, i) => Object.assign(r, { i, rsi: rsi[i], macd: macd[i], sig: sig[i], hist: macd[i] - sig[i], mp: macd[i] / C[i] * 100, K: K[i], D: Dl[i], s20: s20[i], e21: e21[i], ma104: ma104[i], td: tdc[i] }));
     const dlow = (t) => d3.min(D.cm.filter((d) => Math.abs(d.t - t) <= 7 * DAY), (d) => d.p);
-    // RSI-bodems: laagste RSI binnen ±6 weken en onder 40; de laatste mag voorlopig zijn (alleen de weken ervoor tellen)
-    const lows = [];
-    rows.forEach((r, i) => {
-      if (r.rsi == null || r.rsi >= 40) return;
-      const win = rows.slice(Math.max(0, i - 6), i + 7);
-      if (win.every((q) => q.rsi == null || q.rsi >= r.rsi)) lows.push({ ...r, i, p: dlow(r.t), prov: i > rows.length - 7 });
-    });
-    // divergenties: twee opeenvolgende bodems binnen 60 weken, prijs lager of gelijk (max +2%), RSI minstens 2 punten hoger
-    const divs = [];
-    for (let k = 1; k < lows.length; k++) {
-      const a = lows[k - 1], b = lows[k];
-      if (b.t - a.t <= 60 * 7 * DAY && b.p <= a.p * 1.02 && b.rsi >= a.rsi + 2) divs.push([a, b]);
-    }
-    return { rows, live, lows, divs };
+    const swing = (key, lim) => { const out = []; rows.forEach((r, i) => { if (r[key] == null || r[key] >= lim) return; if (rows.slice(Math.max(0, i - 6), i + 7).every((q) => q[key] == null || q[key] >= r[key])) out.push({ ...r, p: dlow(r.t), prov: i > n - 7 }); }); return out; };
+    const divsOf = (lows, key, minUp) => { const out = []; for (let k = 1; k < lows.length; k++) { const a = lows[k - 1], b = lows[k]; if (b.t - a.t <= 60 * 7 * DAY && b.p <= a.p * 1.02 && b[key] >= a[key] + minUp) out.push([a, b]); } return out; };
+    const rlows = swing('rsi', 40), mlows = swing('mp', 0);
+    const crosses = rows.filter((r, i) => i && r.K != null && r.D != null && rows[i - 1].K != null && rows[i - 1].K <= rows[i - 1].D && r.K > r.D && Math.min(r.K, rows[i - 1].K) < 20 && Math.min(r.rsi, rows[i - 1].rsi) < 45);   // alleen in een zwakke markt (RSI < 45)
+    const td9 = rows.filter((r) => r.td === 9);
+    return { rows, rlows, mlows, rdivs: divsOf(rlows, 'rsi', 2), mdivs: divsOf(mlows, 'mp', 2), crosses, td9 };
   };
   const renderRsi = () => {
-    const R = weeklyRsi(); if (!R) { setText('rsi-now-sub', D.cm === null ? 'laden…' : 'niet bereikbaar'); return; }
-    const { rows, live, lows, divs } = R, last = rows[rows.length - 1];
+    const Wd = weekly(); if (!Wd) { setText('rsi-now-sub', D.cm === null ? 'laden…' : 'niet bereikbaar'); return; }
+    const { rows, rlows, mlows, rdivs, mdivs, crosses, td9 } = Wd, last = rows[rows.length - 1], P = price();
+    const dS = (t) => cy.date(new Date(t).toISOString().slice(0, 10));
     setText('rsi-now', d3.format('.1f')(last.rsi));
     const ne = $('rsi-now'); if (ne) ne.style.color = last.rsi < 30 ? 'var(--color-ok)' : last.rsi > 70 ? 'var(--color-bad)' : '';
-    setText('rsi-now-sub', `Weekslot ${cy.date(new Date(last.t).toISOString().slice(0, 10))}` + (live ? ` · lopende week ${d3.format('.1f')(live.rsi)}` : ''));
+    setText('rsi-now-sub', `Weekslot ${dS(last.t)} (${usd(Math.round(last.c))})`);
     const ev = cy.rows() || [], top4 = ev.find((e) => e.id === 'top4');
-    const cyc = rows.filter((r) => r.rsi != null && top4 && r.t >= +top4.t), mn = d3.least(cyc, (r) => r.rsi);
-    if (mn) { setText('rsi-min', d3.format('.1f')(mn.rsi)); setText('rsi-min-sub', `${cy.date(new Date(mn.t).toISOString().slice(0, 10))} · bodems 2015–2022: 26–29`); }
-    const recent = divs.filter(([, b]) => b.t >= Date.now() - 52 * 7 * DAY);
-    if (recent.length) {
-      const chain = [recent[0][0], ...recent.map(([, b]) => b)];
-      setText('rsi-div', 'Ja');
-      const de = $('rsi-div'); if (de) de.style.color = 'var(--color-ok)';
-      setText('rsi-div-sub', `RSI ${chain.map((q) => d3.format('.0f')(q.rsi)).join(' → ')} terwijl de prijs ${chain.map((q) => cy.usdS(q.p)).join(' → ')} deed` + (chain[chain.length - 1].prov ? ' (laatste bodem voorlopig)' : ''));
-    } else { setText('rsi-div', 'Nee'); const de = $('rsi-div'); if (de) de.style.color = ''; setText('rsi-div-sub', 'Geen hogere RSI-bodem bij een lagere prijs in het laatste jaar'); }
-    const hist = ev.filter((e) => e.kind === 'bodem' && e.cycle >= 1 && e.cycle <= 3).map((e) => { const w = rows.filter((r) => r.rsi != null && Math.abs(r.t - e.t) <= 8 * 7 * DAY); const m = d3.least(w, (r) => r.rsi); return m ? `${e.t.getUTCFullYear()}: ${d3.format('.0f')(m.rsi)}` : null; }).filter(Boolean);
+    const mn = d3.least(rows.filter((r) => r.rsi != null && top4 && r.t >= +top4.t), (r) => r.rsi);
+    if (mn) { setText('rsi-min', d3.format('.1f')(mn.rsi)); setText('rsi-min-sub', `${dS(mn.t)} · bodems 2015–2022: 26–31`); }
+    const hist = ev.filter((e) => e.kind === 'bodem' && e.cycle >= 1 && e.cycle <= 3).map((e) => { const m = d3.least(rows.filter((r) => r.rsi != null && Math.abs(r.t - e.t) <= 8 * 7 * DAY), (r) => r.rsi); return m ? `${e.t.getUTCFullYear()}: ${d3.format('.0f')(m.rsi)}` : null; }).filter(Boolean);
     setText('rsi-hist', hist.join(' · ') + ' · jun 2022: 26');
-    // grafiek: prijs boven, RSI onder
+    // weeksignalen
+    const yrAgo = Date.now() - 52 * 7 * DAY, recent4 = Date.now() - 4 * 7 * DAY - DAY;
+    const chainTxt = (divs, key, fmt) => { const rc = divs.filter(([, b]) => b.t >= yrAgo); if (!rc.length) return null; const ch = [rc[0][0], ...rc.map(([, b]) => b)]; return `${ch.map((q) => fmt(q[key])).join(' → ')} bij prijs ${ch.map((q) => cy.usdS(q.p)).join(' → ')}${ch[ch.length - 1].prov ? ' (voorlopig)' : ''}`; };
+    const rTxt = chainTxt(rdivs, 'rsi', (v) => d3.format('.0f')(v)), mTxt = chainTxt(mdivs, 'mp', (v) => d3.format('.1f')(v) + '%');
+    const cr = crosses.filter((r) => r.t >= recent4).pop(), t9 = td9.filter((r) => r.t >= recent4).pop();
+    const band = last.s20 && last.e21 ? [Math.min(last.s20, last.e21), Math.max(last.s20, last.e21)] : null;
+    const sigs = [
+      { name: 'RSI bullish divergentie', ok: !!rTxt, val: rTxt ? 'Ja' : 'Nee', sub: rTxt || `RSI ${d3.format('.1f')(last.rsi)}, geen hogere bodem bij lagere prijs` },
+      { name: 'MACD bullish divergentie', ok: !!mTxt, val: mTxt ? 'Ja' : 'Nee', sub: mTxt ? `MACD (% van prijs) ${mTxt}` : `MACD ${d3.format('.1f')(last.mp)}% van de prijs` },
+      { name: 'Stoch RSI kruist omhoog (<20, RSI<45)', ok: !!cr, val: cr ? 'Ja' : d3.format('.0f')(last.K), sub: cr ? `Kruising op ${dS(cr.t)}` : `K ${d3.format('.0f')(last.K)} / D ${d3.format('.0f')(last.D)}${last.K < 20 ? ' · oververkocht, wacht op kruising' : ''}` },
+      { name: 'TD-koopsetup 9', ok: !!t9, val: t9 ? '9' : String(last.td), sub: t9 ? `Voltooid op ${dS(t9.t)}` : last.td ? `Telling ${last.td} van 9 (weekslot onder dat van 4 weken eerder)` : 'Geen telling' },
+      { name: 'Onder 2-jaars gemiddelde', ok: last.ma104 ? last.c < last.ma104 : null, val: last.ma104 ? d3.format('.2f')(last.c / last.ma104) + '×' : '—', sub: last.ma104 ? `2-jaars gemiddelde ${usd(Math.round(last.ma104))} · bodems 0,43–0,74×` : '—' },
+      { name: 'Boven Bull Market Support Band', ok: band ? last.c > band[1] : null, val: band ? pct(last.c / band[1] - 1) : '—', sub: band ? `Band ${usd(Math.round(band[0]))}–${usd(Math.round(band[1]))} · bevestigt de trendomslag` : '—' },
+    ];
+    const box = $('wk-sig');
+    if (box) {
+      box.replaceChildren();
+      sigs.forEach((q) => { const d = document.createElement('div'); d.className = 'ind' + (q.ok ? ' g' : ''); const a = document.createElement('div'); a.className = 'cy-lbl'; a.textContent = q.name; const b2 = document.createElement('div'); b2.className = 'cy-num'; b2.textContent = q.val; const c2 = document.createElement('div'); c2.className = 'cy-sub'; c2.textContent = q.sub; d.append(a, b2, c2); box.append(d); });
+      setText('wk-score', `${sigs.filter((q) => q.ok).length}/${sigs.length} aan`);
+    }
+    // grafiek: prijs, RSI en MACD onder elkaar
     const el = $('rsi-chart'); if (!el || !hub.frame) return;
     const W0 = el.clientWidth || 600, narrow = W0 < 520;
     let mode = window.btcRsiMode || null; if (!mode) try { mode = localStorage.getItem('btcRsiRange'); } catch (e) { /* */ }
     if (mode !== 'all' && mode !== 'cyclus') mode = narrow ? 'cyclus' : 'all';
     document.querySelectorAll('#rsi-range button').forEach((bt) => bt.classList.toggle('on', bt.dataset.r === mode));
     const t0 = mode === 'cyclus' ? Date.UTC(2021, 0, 1) : Date.UTC(2013, 0, 1);
-    const vis = rows.filter((r) => r.t >= t0 && r.rsi != null).concat(live ? [live] : []);
-    const { W, H, svg } = hub.frame(el, narrow ? 340 : 380);
-    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26, gap = 14;
-    const hP = Math.round((H - mt - mb - gap) * 0.5), yP0 = mt, yR0 = mt + hP + gap, hR = H - mb - yR0;
+    const vis = rows.filter((r) => r.t >= t0 && r.rsi != null);
+    const { W, H, svg } = hub.frame(el, narrow ? 440 : 480);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26, gap = 12;
+    const avail = H - mt - mb - 2 * gap, hP = Math.round(avail * 0.46), hR = Math.round(avail * 0.27), hM = avail - hP - hR;
+    const yP0 = mt, yR0 = yP0 + hP + gap, yM0 = yR0 + hR + gap;
     const x = d3.scaleUtc([new Date(t0), new Date(vis[vis.length - 1].t + 4 * 7 * DAY)], [ml, W - mr]);
-    const yp = d3.scaleLog([d3.min(vis, (r) => r.c) * 0.85, d3.max(vis, (r) => r.c) * 1.15], [yP0 + hP, yP0]);
+    const px = (r) => x(new Date(r.t));
+    const pv = vis.flatMap((r) => [r.c, r.s20, r.e21, r.ma104].filter((v) => v));
+    const yp = d3.scaleLog([d3.min(pv) * 0.85, d3.max(pv) * 1.15], [yP0 + hP, yP0]);
     const yr = d3.scaleLinear([10, 90], [yR0 + hR, yR0]);
-    // prijsdeel
+    const mext = d3.max(vis, (r) => Math.max(Math.abs(r.mp), Math.abs(r.sig / r.c * 100))) || 1;
+    const ym = d3.scaleLinear([-mext, mext], [yM0 + hM, yM0]);
+    // prijs
     const pt = yp.ticks(4).filter((v) => /^[125]/.test(String(v)));
     svg.append('g').selectAll('line').data(pt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', yp).attr('y2', yp);
     svg.append('g').selectAll('text').data(pt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', yp).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => '$' + d3.format('~s')(d));
-    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.65).attr('stroke-width', 1.3).attr('d', d3.line((r) => x(new Date(r.t)), (r) => yp(r.c))(vis));
-    // RSI-deel
+    const bandRows = vis.filter((r) => r.s20 && r.e21);
+    svg.append('path').style('fill', 'var(--color-warn)').attr('fill-opacity', 0.28).attr('d', d3.area(px, (r) => yp(Math.min(r.s20, r.e21)), (r) => yp(Math.max(r.s20, r.e21)))(bandRows));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-opacity', 0.7).attr('stroke-width', 1).attr('d', d3.line(px, (r) => yp(r.e21))(bandRows));
+    svg.append('path').attr('fill', 'none').style('stroke', '#5b8def').attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3').attr('d', d3.line(px, (r) => yp(r.ma104))(vis.filter((r) => r.ma104)));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.7).attr('stroke-width', 1.3).attr('d', d3.line(px, (r) => yp(r.c))(vis));
+    svg.append('g').selectAll('text').data(td9.filter((r) => r.t >= t0)).join('text').attr('x', px).attr('y', (r) => yp(r.c) - 7).attr('text-anchor', 'middle').style('fill', 'var(--color-ok)').style('font-weight', 700).style('font-size', '11px').text('9');
+    svg.append('g').selectAll('path').data(crosses.filter((r) => r.t >= t0)).join('path').attr('transform', (r) => `translate(${px(r)},${yp(r.c) + 9})`).attr('d', d3.symbol(d3.symbolTriangle, 30)()).style('fill', 'var(--color-ok)');
+    // RSI
     svg.append('rect').attr('class', 'rsi-os').attr('x', ml).attr('width', W - mr - ml).attr('y', yr(30)).attr('height', yr(10) - yr(30));
     svg.append('rect').attr('class', 'rsi-ob').attr('x', ml).attr('width', W - mr - ml).attr('y', yr(90)).attr('height', yr(70) - yr(90));
-    svg.append('g').selectAll('line').data([30, 50, 70]).join('line').attr('class', (d) => d === 50 ? 'cy-gl' : 'cy-ref').attr('x1', ml).attr('x2', W - mr).attr('y1', yr).attr('y2', yr);
-    svg.append('g').selectAll('text').data([30, 50, 70]).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', yr).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
-    svg.append('path').attr('fill', 'none').style('stroke', '#a78bfa').attr('stroke-width', 1.6).attr('d', d3.line((r) => x(new Date(r.t)), (r) => yr(r.rsi))(vis));
-    hub.timeAxis(svg, x, W, H);
-    // bodems en divergenties
-    const lv = lows.filter((q) => q.t >= t0);
-    svg.append('g').selectAll('circle').data(lv).join('circle').attr('r', 3.5).attr('cx', (q) => x(new Date(q.t))).attr('cy', (q) => yr(q.rsi)).attr('class', 'cy-pt k-bodem').style('fill-opacity', (q) => q.prov ? 0.5 : 1);
-    divs.filter(([a]) => a.t >= t0).forEach(([a, b]) => {
-      [[yr, 'rsi'], [yp, 'p']].forEach(([sc, k]) => svg.append('line').attr('x1', x(new Date(a.t))).attr('x2', x(new Date(b.t))).attr('y1', sc(a[k])).attr('y2', sc(b[k])).style('stroke', 'var(--color-ok)').attr('stroke-width', 2.2).attr('stroke-linecap', 'round'));
-      svg.append('text').attr('class', 'cy-lab').attr('x', x(new Date(b.t))).attr('y', yr(b.rsi) + 15).attr('text-anchor', 'middle').text(d3.format('.0f')(b.rsi));
-      svg.append('text').attr('class', 'cy-lab').attr('x', x(new Date(a.t))).attr('y', yr(a.rsi) + 15).attr('text-anchor', 'middle').text(d3.format('.0f')(a.rsi));
-    });
+    svg.append('g').selectAll('line').data([30, 70]).join('line').attr('class', 'cy-ref').attr('x1', ml).attr('x2', W - mr).attr('y1', yr).attr('y2', yr);
+    svg.append('g').selectAll('text').data([30, 70]).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', yr).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
+    svg.append('path').attr('fill', 'none').style('stroke', '#a78bfa').attr('stroke-width', 1.5).attr('d', d3.line(px, (r) => yr(r.rsi))(vis));
     svg.append('text').attr('class', 'cy-tick').attr('x', ml + 4).attr('y', yR0 + 10).text('RSI 14w');
-    hub.timeHover(el, svg, W, H, x, vis, (r) => [new Date(r.t).toISOString().slice(0, 10) + (r === live ? ' (lopende week)' : ''), `Weekslot ${usd(Math.round(r.c))}`, `RSI ${d3.format('.1f')(r.rsi)}`]);
+    // MACD
+    svg.append('line').attr('class', 'cy-ref').attr('x1', ml).attr('x2', W - mr).attr('y1', ym(0)).attr('y2', ym(0));
+    const bw = Math.max(1, (W - ml - mr) / vis.length - 0.6);
+    svg.append('g').selectAll('rect').data(vis).join('rect').attr('x', (r) => px(r) - bw / 2).attr('width', bw)
+      .attr('y', (r) => ym(Math.max(0, r.hist / r.c * 100))).attr('height', (r) => Math.abs(ym(r.hist / r.c * 100) - ym(0)))
+      .style('fill', (r) => (r.hist >= 0 ? 'var(--color-ok)' : 'var(--color-bad)')).attr('fill-opacity', 0.45);
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', 1.2).attr('d', d3.line(px, (r) => ym(r.sig / r.c * 100))(vis));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.8).attr('stroke-width', 1.3).attr('d', d3.line(px, (r) => ym(r.mp))(vis));
+    svg.append('text').attr('class', 'cy-tick').attr('x', ml + 4).attr('y', yM0 + 10).text('MACD (% van prijs)');
+    svg.append('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', ym(0)).attr('dy', '0.32em').attr('text-anchor', 'end').text('0');
+    hub.timeAxis(svg, x, W, H);
+    // divergenties
+    const dline = (a, b, sc, k) => svg.append('line').attr('x1', px(a)).attr('x2', px(b)).attr('y1', sc(a[k])).attr('y2', sc(b[k])).style('stroke', 'var(--color-ok)').attr('stroke-width', 2.2).attr('stroke-linecap', 'round');
+    rdivs.filter(([a]) => a.t >= t0).forEach(([a, b]) => { dline(a, b, yr, 'rsi'); dline(a, b, yp, 'p'); });
+    mdivs.filter(([a]) => a.t >= t0).forEach(([a, b]) => { dline(a, b, ym, 'mp'); dline(a, b, yp, 'p'); });
+    svg.append('g').selectAll('circle').data(rlows.filter((q) => q.t >= t0)).join('circle').attr('r', 3).attr('cx', px).attr('cy', (q) => yr(q.rsi)).attr('class', 'cy-pt k-bodem').style('fill-opacity', (q) => (q.prov ? 0.5 : 1));
+    svg.append('g').selectAll('circle').data(mlows.filter((q) => q.t >= t0)).join('circle').attr('r', 3).attr('cx', px).attr('cy', (q) => ym(q.mp)).attr('class', 'cy-pt k-bodem').style('fill-opacity', (q) => (q.prov ? 0.5 : 1));
+    hub.timeHover(el, svg, W, H, x, vis, (r) => [new Date(r.t).toISOString().slice(0, 10), `Weekslot ${usd(Math.round(r.c))}`, `RSI ${d3.format('.1f')(r.rsi)} · Stoch K ${r.K == null ? '—' : d3.format('.0f')(r.K)}`, `MACD ${d3.format('.1f')(r.mp)}% · TD ${r.td}`]);
   };
 
   const renderMvrv = () => {

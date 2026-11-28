@@ -5,7 +5,8 @@
 //   variable NTFY_SERVER  eigen ntfy-server (optioneel, standaard https://ntfy.sh)
 //   variable MINER_JTH    gemiddelde efficiëntie van het netwerk in J/TH (optioneel, standaard 22)
 //   variable MINER_KWH    stroomprijs in $/kWh (optioneel, standaard 0.05)
-// Extra signalen (tellen niet mee in de score): dip van 20%, 10+ dagen extreme angst, bullish divergentie op de weekly RSI.
+// Extra signalen (tellen niet mee in de score): dip van 20%, 10+ dagen extreme angst en de weeksignalen
+// (divergentie op RSI en MACD, Stoch RSI-kruising, TD 9, onder het 2-jaars gemiddelde, boven de Bull Market Support Band).
 // Daarnaast: een melding bij een nieuwe cyclus-low (koers onder de laagste koers sinds de top, in stappen van 2%).
 // MODE=status stuurt altijd een overzicht (om te testen). DRY_RUN=1 toont het bericht zonder te versturen.
 // De vorige toestand staat in STATE_FILE (de workflow bewaart die tussen runs in de Actions-cache).
@@ -64,31 +65,31 @@ const loadAll = async () => {
 
 // ---- signalen (zelfde definities als het dashboard) ----
 // Elk signaal: value + on(v) + off(v). Een kleine marge tussen aan en uit voorkomt een melding bij elke schommeling.
-// Wekelijkse RSI (14) op de zondagsluitingen, met bullish divergenties (zelfde regels als het dashboard):
-// RSI-bodem = laagste RSI binnen ±6 weken en onder 40 (de laatste mag voorlopig zijn); divergentie = twee opeenvolgende
-// bodems binnen 60 weken waarbij de prijs (laagste dagslot ±7 dagen) lager of gelijk is (max +2%) en de RSI minstens 2 hoger.
-export const weeklyRsi = (daily, now = Date.now()) => {
-  const wk = daily.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= now);
+// Weeksignalen op de zondagsluitingen (zelfde regels als de dashboardkaart "Weekgrafiek: RSI, MACD en trend"):
+// - RSI- en MACD-bodem = laagste waarde binnen ±6 weken (RSI onder 40, MACD onder 0); de laatste mag voorlopig zijn
+// - bullish divergentie = twee opeenvolgende bodems binnen 60 weken, prijs (laagste dagslot ±7 d) lager of gelijk (max +2%),
+//   indicator minstens 2 punten hoger (MACD in % van de prijs), met de laatste bodem in het laatste jaar
+// - Stoch RSI-kruising: K kruist omhoog door D vanuit onder 20, bij RSI onder 45, in de laatste 4 weken
+// - TD-koopsetup 9: 9 weken op rij een slot onder dat van 4 weken eerder, voltooid in de laatste 4 weken
+export const weekly = (daily, now = Date.now()) => {
+  const wk = daily.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= now).map((r) => ({ t: r.t, c: r.close }));
+  const C = wk.map((w) => w.c), n = C.length;
+  const ema = (a, k) => { let m = null; return a.map((v) => (m = m == null ? v : v * 2 / (k + 1) + m * (1 - 2 / (k + 1)))); };
+  const sma = (a, k) => a.map((v, i) => (i < k - 1 || a.slice(i - k + 1, i + 1).some((q) => q == null) ? null : mean(a.slice(i - k + 1, i + 1))));
   const N = 14; let g = 0, l = 0;
-  const rows = wk.map((w, i) => {
-    if (!i) return { ...w, rsi: null };
-    const ch = w.close - wk[i - 1].close, up = Math.max(ch, 0), dn = Math.max(-ch, 0);
-    if (i <= N) { g += up / N; l += dn / N; } else { g = (g * (N - 1) + up) / N; l = (l * (N - 1) + dn) / N; }
-    return { ...w, rsi: i >= N ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null };
-  });
+  const rsi = C.map((c, i) => { if (!i) return null; const ch = c - C[i - 1], up = Math.max(ch, 0), dn = Math.max(-ch, 0); if (i <= N) { g += up / N; l += dn / N; } else { g = (g * (N - 1) + up) / N; l = (l * (N - 1) + dn) / N; } return i >= N ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null; });
+  const e12 = ema(C, 12), e26 = ema(C, 26), macd = C.map((c, i) => e12[i] - e26[i]);
+  const srsi = rsi.map((v, i) => { const w = rsi.slice(Math.max(0, i - 13), i + 1).filter((q) => q != null); return v == null || w.length < 14 ? null : (Math.max(...w) === Math.min(...w) ? 0 : (v - Math.min(...w)) / (Math.max(...w) - Math.min(...w)) * 100); });
+  const K = sma(srsi, 3), Dl = sma(K, 3), s20 = sma(C, 20), e21 = ema(C, 21), ma104 = sma(C, 104);
+  let td = 0; const tdc = C.map((c, i) => (td = i >= 4 && c < C[i - 4] ? td + 1 : 0));
+  const rows = wk.map((w, i) => ({ ...w, rsi: rsi[i], mp: macd[i] / C[i] * 100, K: K[i], D: Dl[i], s20: s20[i], e21: e21[i], ma104: ma104[i], td: tdc[i] }));
   const dlow = (t) => Math.min(...daily.filter((d) => Math.abs(d.t - t) <= 7 * DAY).map((d) => d.close));
-  const lows = [];
-  rows.forEach((r, i) => {
-    if (r.rsi == null || r.rsi >= 40) return;
-    if (rows.slice(Math.max(0, i - 6), i + 7).every((q) => q.rsi == null || q.rsi >= r.rsi)) lows.push({ ...r, p: dlow(r.t), prov: i > rows.length - 7 });
-  });
-  const divs = [];
-  for (let k = 1; k < lows.length; k++) {
-    const a = lows[k - 1], b = lows[k];
-    if (b.t - a.t <= 60 * 7 * DAY && b.p <= a.p * 1.02 && b.rsi >= a.rsi + 2) divs.push([a, b]);
-  }
-  const recent = divs.filter(([, b]) => b.t >= now - 52 * 7 * DAY);
-  return { last: rows[rows.length - 1], recent };
+  const swing = (key, lim) => { const out = []; rows.forEach((r, i) => { if (r[key] == null || r[key] >= lim) return; if (rows.slice(Math.max(0, i - 6), i + 7).every((q) => q[key] == null || q[key] >= r[key])) out.push({ ...r, p: dlow(r.t), prov: i > n - 7 }); }); return out; };
+  const divs = (lows, key) => { const out = []; for (let k = 1; k < lows.length; k++) { const a = lows[k - 1], b = lows[k]; if (b.t - a.t <= 60 * 7 * DAY && b.p <= a.p * 1.02 && b[key] >= a[key] + 2) out.push([a, b]); } return out.filter(([, b]) => b.t >= now - 52 * 7 * DAY); };
+  const last4 = now - 4 * 7 * DAY - DAY;
+  const cross = rows.filter((r, i) => i && r.t >= last4 && r.K != null && r.D != null && rows[i - 1].K != null && rows[i - 1].K <= rows[i - 1].D && r.K > r.D && Math.min(r.K, rows[i - 1].K) < 20 && Math.min(r.rsi, rows[i - 1].rsi) < 45).pop() || null;
+  const td9 = rows.filter((r) => r.td === 9 && r.t >= last4).pop() || null;
+  return { last: rows[rows.length - 1], rdiv: divs(swing('rsi', 40), 'rsi'), mdiv: divs(swing('mp', 0), 'mp'), cross, td9 };
 };
 
 const NL = { 'Extreme Fear': 'extreme angst', Fear: 'angst', Neutral: 'neutraal', Greed: 'hebzucht', 'Extreme Greed': 'extreme hebzucht' };
@@ -104,13 +105,21 @@ export const signals = (d, cfg = {}) => {
     }
     const hi = Math.max(...d.daily.slice(-120).map((r) => r.close), P), v = P / hi - 1;
     out.push({ id: 'dip', name: 'Dip: 20% onder top van 120 dagen', v, on: v < -0.2, off: v > -0.18, txt: `${pct(v)} onder ${fmt(hi)}` });
-    const wr = weeklyRsi(d.daily);
-    if (wr.last && wr.last.rsi != null) {
-      const on = wr.recent.length > 0, chain = on ? [wr.recent[0][0], ...wr.recent.map(([, b]) => b)] : [];
+    const w = weekly(d.daily), L = w.last;
+    if (L && L.rsi != null) {
       const k = (v) => '$' + (v / 1000).toFixed(1).replace('.', ',') + 'k';
-      out.push({ id: 'rsidiv', name: 'Bullish divergentie (weekly RSI)', v: on ? 1 : 0, on, off: !on,
-        txt: on ? `RSI ${chain.map((q) => Math.round(q.rsi)).join(' → ')} bij prijs ${chain.map((q) => k(q.p)).join(' → ')}${chain[chain.length - 1].prov ? ' (laatste bodem voorlopig)' : ''} · RSI nu ${num(wr.last.rsi, 1)}`
-          : `geen hogere RSI-bodem bij een lagere prijs · RSI nu ${num(wr.last.rsi, 1)}` });
+      const chain = (dv, key, f) => { const ch = [dv[0][0], ...dv.map(([, b]) => b)]; return `${ch.map((q) => f(q[key])).join(' → ')} bij prijs ${ch.map((q) => k(q.p)).join(' → ')}${ch[ch.length - 1].prov ? ' (laatste bodem voorlopig)' : ''}`; };
+      const dS = (t) => { const x = new Date(t); return `${x.getUTCDate()}/${x.getUTCMonth() + 1}`; };
+      out.push({ id: 'rsidiv', name: 'Bullish divergentie (weekly RSI)', v: w.rdiv.length ? 1 : 0, on: w.rdiv.length > 0, off: !w.rdiv.length,
+        txt: (w.rdiv.length ? `RSI ${chain(w.rdiv, 'rsi', (v) => Math.round(v))}` : 'geen hogere RSI-bodem bij een lagere prijs') + ` · RSI nu ${num(L.rsi, 1)}` });
+      out.push({ id: 'macddiv', name: 'Bullish divergentie (weekly MACD)', v: w.mdiv.length ? 1 : 0, on: w.mdiv.length > 0, off: !w.mdiv.length,
+        txt: (w.mdiv.length ? `MACD ${chain(w.mdiv, 'mp', (v) => num(v, 1) + '%')}` : 'geen hogere MACD-bodem bij een lagere prijs') + ` · MACD nu ${num(L.mp, 1)}% van de prijs` });
+      out.push({ id: 'stochx', name: 'Stoch RSI kruist omhoog vanuit <20 (week)', v: w.cross ? 1 : 0, on: !!w.cross, off: !w.cross,
+        txt: w.cross ? `kruising in de week van ${dS(w.cross.t)} · K ${Math.round(L.K)} / D ${Math.round(L.D)}` : `K ${Math.round(L.K)} / D ${Math.round(L.D)}${L.K < 20 ? ' · oververkocht, wacht op kruising' : ''}` });
+      out.push({ id: 'td9', name: 'TD-koopsetup 9 (week)', v: w.td9 ? 1 : 0, on: !!w.td9, off: !w.td9,
+        txt: w.td9 ? `voltooid in de week van ${dS(w.td9.t)}` : `telling ${L.td} van 9` });
+      if (L.ma104) { const v = L.c / L.ma104; out.push({ id: 'ma2y', name: 'Weekslot onder 2-jaars gemiddelde', v, on: v < 1, off: v > 1.02, txt: `${num(v)}× van ${fmt(L.ma104)} (bodems 0,43–0,74×)` }); }
+      if (L.s20 && L.e21) { const hi = Math.max(L.s20, L.e21), lo = Math.min(L.s20, L.e21); out.push({ id: 'bmsb', name: 'Weekslot boven Bull Market Support Band', v: L.c / hi, on: L.c > hi, off: L.c < lo, txt: `weekslot ${fmt(L.c)} · band ${fmt(lo)}–${fmt(hi)} (heroveren = trendomslag bevestigd)` }); }
     }
   }
   if (d.cm && d.cm.length && P) {
@@ -210,7 +219,7 @@ const main = async () => {
   const prevScore = saved.score;
 
   const byId = new Map(sigs.map((s) => [s.id, s]));
-  const overview = [...SCORE_IDS, 'dip', 'fngstreak', 'rsidiv'].filter((id) => byId.has(id)).map((id) => { const s = byId.get(id); return `${state[id] ? '🟢' : '⚪'} ${s.name}: ${s.txt}`; });
+  const overview = [...SCORE_IDS, 'dip', 'fngstreak', 'rsidiv', 'macddiv', 'stochx', 'td9', 'ma2y', 'bmsb'].filter((id) => byId.has(id)).map((id) => { const s = byId.get(id); return `${state[id] ? '🟢' : '⚪'} ${s.name}: ${s.txt}`; });
   const head = `BTC ${fmt(d.price)} · kapitulatiescore ${score}/${known.length}`;
   // nieuwe cyclus-low: de prijs zakt onder de laagste koers sinds de top
   const cl = cycleLow(d.daily, d.price);
