@@ -548,8 +548,10 @@ window.dash = (() => {
       <span><i class="sw" style="background:#f7931a"></i>Nu (vanaf top okt 2025)</span>
       <span><i class="sw" style="background:#14b8a6"></i>2022 (vanaf top nov 2021)</span>
       <span><i class="sw proj"></i>Vervolg van 2022</span>
+      <span><i class="sw proj" style="border-color:#f7931a"></i>Gesimuleerd vervolg nu (tot dag 500)</span>
     </div>
     <div class="cy-chart" id="cmp-chart"></div>
+    <span data-draw="cmp-sync" hidden></span>
     <h2 style="margin-top:var(--cds-gap-lg)">Bodemscenario's bij een dip in Q4</h2>
     <p class="cy-note">Berekend vanaf de live prijs, de cyclusbodem (de laagste koers sinds de top, schuift automatisch mee; instelbaar onder Alerts) en de top van $126.080. Hogere bodem: Fibonacci 0,618–0,786 terug van het herstel. Dubbele bodem: retest van de cyclusbodem. 2022-scenario: 12% onder de eerste low, zoals juni → november 2022. Volle cyclusdaling: de trend van kleinere dalingen doorgetrokken (±70%). Patronen, geen voorspelling.</p>
     <div class="cy-tw">
@@ -861,6 +863,36 @@ dash.draw('cd-pct', (el) => {
 </script>
 
 <script>
+// Verwacht pad (gedeeld door de koersgrafiek en '2022 vs nu'): nu → halving 5 → top, in de vorm van de vorige cyclus
+window.cyProjPath = () => {
+  const ev = cy.rows(); if (!ev) return null;
+  const pt = ev.find((e) => e.kind === 'verwachte top'), h5p = ev.find((e) => e.id === 'halving5' && e.price != null), nowP = ev.find((e) => e.kind === 'nu' && e.price != null);
+  if (!(pt && pt.price && h5p && nowP)) return null;
+  const real = window.hub && window.hub.state.daily ? window.hub.state.daily.rows.filter((r) => r.close >= 0.03) : null;
+  // Pad met de vorm van de vorige cyclus (bodem → halving → top), geschaald tussen nu, het halving-richtpunt en de top.
+  // Per stuk: afwijking van de rechte lijn (op logschaal) in de oude cyclus × 0,8, opgeteld bij de rechte lijn tussen de nieuwe punten.
+  const DAYMS = 864e5, get = (id) => ev.find((e) => e.id === id);
+  const L3 = get('low3'), H4 = get('halving4'), T4 = get('top4'), L4 = get('low4');
+  if (real && real.length && L3 && H4 && T4 && L4 && real[0].t < +L3.t) {
+    const bis = d3.bisector((q) => q.t).left;
+    const logAt = (t) => { const i = bis(real, t - 3 * DAYMS), w = real.slice(i, i + 7).filter((q) => Math.abs(q.t - t) <= 3 * DAYMS); return w.length ? d3.mean(w, (q) => Math.log(q.close)) : null; };
+    const seg = (hA, hB, nA, pA, nB, pB, f0) => {
+      const la = logAt(hA), lb = logAt(hB); if (la == null || lb == null) return null;
+      const dev = (ft) => { const v = logAt(hA + ft * (hB - hA)); return v == null ? 0 : v - (la + ft * (lb - la)); };
+      const d0 = dev(f0), n = Math.max(10, Math.round((nB - nA) / (5 * DAYMS))), out = [];
+      for (let i = 0; i <= n; i++) {
+        const f = i / n, ft = f0 + f * (1 - f0);
+        out.push({ t: new Date(nA + f * (nB - nA)), price: Math.exp(Math.log(pA) + f * (Math.log(pB) - Math.log(pA)) + 0.8 * (dev(ft) - d0 * (1 - f))) });
+      }
+      return out;
+    };
+    const f0 = Math.min(0.9, Math.max(0, (+nowP.t - +L4.t) / (+h5p.t - +L4.t)));
+    const a = seg(+L3.t, +H4.t, +nowP.t, nowP.price, +h5p.t, h5p.price, f0), b = seg(+H4.t, +T4.t, +h5p.t, h5p.price, +pt.t, pt.price, 0);
+    if (a && b) return a.concat(b.slice(1));
+  }
+  return null;
+};
+
 dash.draw('chart', (el) => {
   const ev = cy.rows(); if (!cy.ready(el, ev)) return;
   el.replaceChildren();
@@ -920,28 +952,7 @@ dash.draw('chart', (el) => {
   // verwacht pad: nu → halving 5 → top (eigen richtpunten)
   const proj = [];
   if (nowP && h5p && pt && pt.price) {
-    // Pad met de vorm van de vorige cyclus (bodem → halving → top), geschaald tussen nu, het halving-richtpunt en de top.
-    // Per stuk: afwijking van de rechte lijn (op logschaal) in de oude cyclus × 0,8, opgeteld bij de rechte lijn tussen de nieuwe punten.
-    const DAYMS = 864e5, get = (id) => ev.find((e) => e.id === id);
-    const L3 = get('low3'), H4 = get('halving4'), T4 = get('top4'), L4 = get('low4');
-    let path = null;
-    if (real && real.length && L3 && H4 && T4 && L4 && real[0].t < +L3.t) {
-      const bis = d3.bisector((q) => q.t).left;
-      const logAt = (t) => { const i = bis(real, t - 3 * DAYMS), w = real.slice(i, i + 7).filter((q) => Math.abs(q.t - t) <= 3 * DAYMS); return w.length ? d3.mean(w, (q) => Math.log(q.close)) : null; };
-      const seg = (hA, hB, nA, pA, nB, pB, f0) => {
-        const la = logAt(hA), lb = logAt(hB); if (la == null || lb == null) return null;
-        const dev = (ft) => { const v = logAt(hA + ft * (hB - hA)); return v == null ? 0 : v - (la + ft * (lb - la)); };
-        const d0 = dev(f0), n = Math.max(10, Math.round((nB - nA) / (5 * DAYMS))), out = [];
-        for (let i = 0; i <= n; i++) {
-          const f = i / n, ft = f0 + f * (1 - f0);
-          out.push({ t: new Date(nA + f * (nB - nA)), price: Math.exp(Math.log(pA) + f * (Math.log(pB) - Math.log(pA)) + 0.8 * (dev(ft) - d0 * (1 - f))) });
-        }
-        return out;
-      };
-      const f0 = Math.min(0.9, Math.max(0, (+nowP.t - +L4.t) / (+h5p.t - +L4.t)));
-      const a = seg(+L3.t, +H4.t, +nowP.t, nowP.price, +h5p.t, h5p.price, f0), b = seg(+H4.t, +T4.t, +h5p.t, h5p.price, +pt.t, pt.price, 0);
-      if (a && b) path = a.concat(b.slice(1));
-    }
+    const path = window.cyProjPath();
     plot.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', path ? 1.8 : 2).attr('stroke-opacity', path ? 0.75 : 1).attr('stroke-dasharray', path ? null : '6 4').attr('stroke-linejoin', 'round')
       .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))(path || [nowP, h5p, pt]));
     proj.push({ e: h5p, color: 'var(--color-warn)', txt: 'H5 ' + cy.usdS(h5p.price) }, { e: pt, color: 'var(--color-bad)', txt: 'top ' + cy.usdS(pt.price) });
@@ -1972,6 +1983,7 @@ window.hub = (() => {
   const TOP22 = { t: Date.UTC(2021, 10, 10), price: 69000 };
   const TOP25 = { t: Date.UTC(2025, 9, 6), price: 126080 };
   const LEN22 = 520; // dagen van de 2022-reeks om te tonen
+  const SIM_TO = 500; // gesimuleerd vervolg van deze cyclus tot deze dag na de top
   const $ = (id) => document.getElementById(id);
 
   const bybit = async (start, end) => {
@@ -1985,9 +1997,19 @@ window.hub = (() => {
     const j = await (await fetch(u)).json();
     return j.map((k) => ({ t: +k[0], close: +k[4] }));
   };
+  const coinbase = async (start, end) => {
+    let out = [];
+    for (let a = start; a < end; a += 300 * DAY) {
+      const b = Math.min(end, a + 299 * DAY);
+      const j = await (await fetch(`https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400&start=${new Date(a).toISOString()}&end=${new Date(b).toISOString()}`)).json();
+      if (!Array.isArray(j)) throw new Error('Coinbase');
+      out = out.concat(j.map((k) => ({ t: k[0] * 1000, close: +k[4] })));
+    }
+    return out;
+  };
   const daily = async (start, end) => {
     let rows;
-    try { rows = await bybit(start, end); } catch (e) { rows = await binance(start, end); }
+    try { rows = await bybit(start, end); } catch (e) { try { rows = await binance(start, end); } catch (e2) { rows = await coinbase(start, end); } }
     if (!rows.length) throw new Error('geen data');
     return rows.sort((a, b) => a.t - b.t);
   };
@@ -2020,12 +2042,18 @@ window.hub = (() => {
     $('cmp-day').textContent = N;
     $('cmp-now').textContent = pct0(pNow[pNow.length - 1].pct);
     $('cmp-then').textContent = then ? pct0(then.pct) : '—';
+    // gesimuleerd vervolg van nu: het verwachte pad van de koersgrafiek (vorm vorige cyclus, richting H5-richtpunt), tot dag SIM_TO
+    const proj = window.cyProjPath ? window.cyProjPath() : null;
+    const sim = proj ? [pNow[pNow.length - 1]].concat(proj.map((q) => ({ day: (q.t - TOP25.t) / DAY, pct: q.price / TOP25.price })).filter((q) => q.day > N && q.day <= SIM_TO + 6)) : null;
+    if (sim && sim.length > 1 && sim[sim.length - 1].day > SIM_TO) { const a = sim[sim.length - 2], b = sim[sim.length - 1], f = (SIM_TO - a.day) / (b.day - a.day); sim[sim.length - 1] = { day: SIM_TO, pct: a.pct + f * (b.pct - a.pct) }; }
+    const simAt = (day) => { if (!sim || sim.length < 2 || day < N || day > sim[sim.length - 1].day) return null; const i = sim.findIndex((q) => q.day >= day); if (i <= 0) return sim[0].pct; const a = sim[i - 1], b = sim[i]; return a.pct + (day - a.day) / (b.day - a.day) * (b.pct - a.pct); };
     const lowDate = new Date(TOP25.t + low22.day * DAY);
     $('cmp-take').textContent = `In 2022 viel de echte bodem op dag ${low22.day} na de top (${pct0(low22.pct)}). ` +
       (low22.day <= N
         ? `Op die tijdlijn had de bodem van deze cyclus rond ${cy.date(lowDate.toISOString().slice(0, 10))} moeten liggen; die dag ligt al achter ons.`
         : `Op die tijdlijn valt de bodem van deze cyclus rond ${cy.date(lowDate.toISOString().slice(0, 10))}.`) +
-      ` Een vervolg zoals in 2022 zou neerkomen op ±${cy.usd(Math.round(low22.pct * TOP25.price / 100) * 100)}.`;
+      ` Een vervolg zoals in 2022 zou neerkomen op ±${cy.usd(Math.round(low22.pct * TOP25.price / 100) * 100)}.` +
+      (sim && sim.length > 1 ? ` Gesimuleerd vervolg (vorm vorige cyclus, richting het halving-richtpunt): dag ${SIM_TO} (${cy.date(new Date(TOP25.t + SIM_TO * DAY).toISOString().slice(0, 10))}) ≈ ${cy.usd(Math.round(sim[sim.length - 1].pct * TOP25.price / 100) * 100)} (${pct0(sim[sim.length - 1].pct)} t.o.v. de top).` : '');
 
     const W = el.clientWidth || 600, H = W < 520 ? 280 : 360;
     const svg = d3.select(el).append('svg').attr('class', 'cy-svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
@@ -2071,6 +2099,13 @@ window.hub = (() => {
     svg.append('path').attr('fill', 'none').attr('stroke', '#14b8a6').attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('d', line(past22));
     svg.append('path').attr('fill', 'none').attr('stroke', '#14b8a6').attr('stroke-width', 2).attr('stroke-dasharray', '4 4').attr('opacity', 0.6).attr('d', line(fut22));
     svg.append('path').attr('fill', 'none').attr('stroke', '#f7931a').attr('stroke-width', 2.5).attr('stroke-linejoin', 'round').attr('d', line(pNow));
+    if (sim && sim.length > 1) {
+      svg.append('path').attr('fill', 'none').attr('stroke', '#f7931a').attr('stroke-width', 2.2).attr('stroke-dasharray', '5 4').attr('stroke-linejoin', 'round').attr('d', line(sim));
+      const e = sim[sim.length - 1];
+      svg.append('circle').attr('r', 4).attr('cx', x(e.day)).attr('cy', y(e.pct)).style('fill', 'var(--color-panel)').style('stroke', '#f7931a').attr('stroke-width', 2);
+      const lt = `dag ${SIM_TO}: ${cy.usdS(e.pct * TOP25.price)}`, lw = cy.measure(svg, lt), lx = Math.min(x(e.day), W - mr - lw / 2 - 2);
+      svg.append('text').attr('class', 'cy-lab').attr('x', lx).attr('y', y(e.pct) - 9).attr('text-anchor', 'middle').text(lt);
+    }
     svg.append('circle').attr('class', 'cy-pt').attr('fill', '#14b8a6').attr('r', 4).attr('cx', x(low22.day)).attr('cy', y(low22.pct));
     svg.append('text').attr('class', 'cy-lab').attr('x', x(low22.day)).attr('y', y(low22.pct) + 16).attr('text-anchor', 'middle').text('bodem 2022');
 
@@ -2087,6 +2122,7 @@ window.hub = (() => {
         const add = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; tip.append(d); };
         add('d', `Dag ${day} na de top`);
         if (a) add('v', `Nu: ${pct0(a.pct)} (${cy.usd(Math.round(a.pct * TOP25.price))})`);
+        else { const sv = simAt(day); if (sv != null) add('v', `Gesimuleerd: ${pct0(sv)} (${cy.usd(Math.round(sv * TOP25.price / 100) * 100)})`); }
         if (b) add('v', `2022: ${pct0(b.pct)} (${cy.usd(Math.round(b.pct * TOP22.price))})`);
         tip.hidden = false;
         const s = el.clientWidth / W; let left = x(day) * s + 12;
@@ -2110,6 +2146,7 @@ window.hub = (() => {
     }
   };
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(draw, 150); });
+  dash.draw('cmp-sync', () => draw());   // dash.redraw(): nieuwe dagkoersen of live prijs → simulatie bijwerken
   load();
   setInterval(load, 15 * 60000);
 })();
