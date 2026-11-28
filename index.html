@@ -230,6 +230,9 @@ html{scroll-behavior:smooth}
 #bz-chart{min-height:340px}
 #bz-hr-chart,#bz-liq-chart,#bz-mvrv-chart,#bz-puell-chart{min-height:240px}
 #bz-mvrv-chart{min-height:280px}
+#rsi-chart{min-height:340px}
+.rsi-os{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
+.rsi-ob{fill:color-mix(in srgb,var(--color-bad) 8%,transparent)}
 .bz-pu-low{fill:color-mix(in srgb,var(--color-ok) 12%,transparent)}
 .bz-pu-high{fill:color-mix(in srgb,var(--color-bad) 10%,transparent)}
 #bz-fg-chart{min-height:260px}
@@ -404,6 +407,24 @@ window.dash = (() => {
       </div>
 
     </details>
+  </section>
+  <section class="cy-card" id="rsi">
+    <div class="koers-head"><h2>Wekelijkse RSI</h2><div class="seg" id="rsi-range" role="group" aria-label="Periode"><button type="button" data-r="cyclus">Sinds 2021</button><button type="button" data-r="all">Sinds 2013</button></div></div>
+    <p class="cy-note">RSI (14 weken) op de weeksluitingen (Coin Metrics). Onder 30 is BTC op weekbasis zwaar oververkocht: daar lagen de bodems van 2015, 2018 en 2022. Een <b>bullish divergentie</b> (groene lijn) betekent dat de prijs een lagere of gelijke bodem maakt terwijl de RSI een hogere bodem maakt: de verkoopdruk neemt af. Dat ging vooraf aan de bodem van 2022.</p>
+    <div class="cy-tiles fut-tiles">
+      <div><div class="cy-lbl">RSI nu (week)</div><div class="cy-num" id="rsi-now">—</div><div class="cy-sub" id="rsi-now-sub">laden…</div></div>
+      <div><div class="cy-lbl">Laagste deze cyclus</div><div class="cy-num" id="rsi-min">—</div><div class="cy-sub" id="rsi-min-sub">—</div></div>
+      <div><div class="cy-lbl">Bullish divergentie</div><div class="cy-num" id="rsi-div">—</div><div class="cy-sub" id="rsi-div-sub">—</div></div>
+      <div><div class="cy-lbl">RSI bij eerdere bodems</div><div class="cy-sub fut-big" id="rsi-hist">—</div></div>
+    </div>
+    <div class="cy-legend">
+      <span><i class="sw" style="background:var(--color-fg);opacity:.6"></i>Weekslot (boven)</span>
+      <span><i class="sw" style="background:#a78bfa"></i>RSI 14 weken (onder)</span>
+      <span><i class="sw bull"></i>Oververkocht (onder 30)</span>
+      <span><i class="sw bodem"></i>RSI-bodem</span>
+      <span><i class="sw" style="background:var(--color-ok);height:3px;border-radius:2px;width:14px"></i>Bullish divergentie</span>
+    </div>
+    <div class="cy-chart" id="rsi-chart"></div>
   </section>
   <section class="cy-card" id="miner">
     <h2>Miner stress</h2>
@@ -2489,6 +2510,86 @@ window.bodem = (() => {
     hub.timeHover(el, svg, W, H, x, rows, (r) => [new Date(r.t).toISOString().slice(0, 10), `Puell ${d3.format('.2f')(r.pu7)}`, `Prijs ${usd(Math.round(r.p))}`]);
   };
 
+  // ---- Wekelijkse RSI (14) met bodems en bullish divergenties ----
+  const weeklyRsi = () => {
+    if (!D.cm || !D.cm.length) return null;
+    const wk = D.cm.filter((d) => new Date(d.t).getUTCDay() === 0).map((d) => ({ t: d.t, c: d.p }));
+    const calc = (arr) => { const N = 14; let g = 0, l = 0; return arr.map((w, i) => { if (!i) return { ...w, rsi: null }; const ch = w.c - arr[i - 1].c, up = Math.max(ch, 0), dn = Math.max(-ch, 0); if (i <= N) { g += up / N; l += dn / N; } else { g = (g * (N - 1) + up) / N; l = (l * (N - 1) + dn) / N; } return { ...w, rsi: i >= N ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null }; }); };
+    const rows = calc(wk), P = price(), last = wk[wk.length - 1];
+    const live = P && Date.now() - last.t > DAY ? calc(wk.concat([{ t: Date.now(), c: P }])).pop() : null;
+    // laagste dagslot binnen ±7 dagen (prijsbodem bij een RSI-bodem)
+    const dlow = (t) => d3.min(D.cm.filter((d) => Math.abs(d.t - t) <= 7 * DAY), (d) => d.p);
+    // RSI-bodems: laagste RSI binnen ±6 weken en onder 40; de laatste mag voorlopig zijn (alleen de weken ervoor tellen)
+    const lows = [];
+    rows.forEach((r, i) => {
+      if (r.rsi == null || r.rsi >= 40) return;
+      const win = rows.slice(Math.max(0, i - 6), i + 7);
+      if (win.every((q) => q.rsi == null || q.rsi >= r.rsi)) lows.push({ ...r, i, p: dlow(r.t), prov: i > rows.length - 7 });
+    });
+    // divergenties: twee opeenvolgende bodems binnen 60 weken, prijs lager of gelijk (max +2%), RSI minstens 2 punten hoger
+    const divs = [];
+    for (let k = 1; k < lows.length; k++) {
+      const a = lows[k - 1], b = lows[k];
+      if (b.t - a.t <= 60 * 7 * DAY && b.p <= a.p * 1.02 && b.rsi >= a.rsi + 2) divs.push([a, b]);
+    }
+    return { rows, live, lows, divs };
+  };
+  const renderRsi = () => {
+    const R = weeklyRsi(); if (!R) { setText('rsi-now-sub', D.cm === null ? 'laden…' : 'niet bereikbaar'); return; }
+    const { rows, live, lows, divs } = R, last = rows[rows.length - 1];
+    setText('rsi-now', d3.format('.1f')(last.rsi));
+    const ne = $('rsi-now'); if (ne) ne.style.color = last.rsi < 30 ? 'var(--color-ok)' : last.rsi > 70 ? 'var(--color-bad)' : '';
+    setText('rsi-now-sub', `Weekslot ${cy.date(new Date(last.t).toISOString().slice(0, 10))}` + (live ? ` · lopende week ${d3.format('.1f')(live.rsi)}` : ''));
+    const ev = cy.rows() || [], top4 = ev.find((e) => e.id === 'top4');
+    const cyc = rows.filter((r) => r.rsi != null && top4 && r.t >= +top4.t), mn = d3.least(cyc, (r) => r.rsi);
+    if (mn) { setText('rsi-min', d3.format('.1f')(mn.rsi)); setText('rsi-min-sub', `${cy.date(new Date(mn.t).toISOString().slice(0, 10))} · bodems 2015–2022: 26–29`); }
+    const recent = divs.filter(([, b]) => b.t >= Date.now() - 52 * 7 * DAY);
+    if (recent.length) {
+      const chain = [recent[0][0], ...recent.map(([, b]) => b)];
+      setText('rsi-div', 'Ja');
+      const de = $('rsi-div'); if (de) de.style.color = 'var(--color-ok)';
+      setText('rsi-div-sub', `RSI ${chain.map((q) => d3.format('.0f')(q.rsi)).join(' → ')} terwijl de prijs ${chain.map((q) => cy.usdS(q.p)).join(' → ')} deed` + (chain[chain.length - 1].prov ? ' (laatste bodem voorlopig)' : ''));
+    } else { setText('rsi-div', 'Nee'); const de = $('rsi-div'); if (de) de.style.color = ''; setText('rsi-div-sub', 'Geen hogere RSI-bodem bij een lagere prijs in het laatste jaar'); }
+    const hist = ev.filter((e) => e.kind === 'bodem' && e.cycle >= 1 && e.cycle <= 3).map((e) => { const w = rows.filter((r) => r.rsi != null && Math.abs(r.t - e.t) <= 8 * 7 * DAY); const m = d3.least(w, (r) => r.rsi); return m ? `${e.t.getUTCFullYear()}: ${d3.format('.0f')(m.rsi)}` : null; }).filter(Boolean);
+    setText('rsi-hist', hist.join(' · ') + ' · jun 2022: 26');
+    // grafiek: prijs boven, RSI onder
+    const el = $('rsi-chart'); if (!el || !hub.frame) return;
+    const W0 = el.clientWidth || 600, narrow = W0 < 520;
+    let mode = window.btcRsiMode || null; if (!mode) try { mode = localStorage.getItem('btcRsiRange'); } catch (e) { /* */ }
+    if (mode !== 'all' && mode !== 'cyclus') mode = narrow ? 'cyclus' : 'all';
+    document.querySelectorAll('#rsi-range button').forEach((bt) => bt.classList.toggle('on', bt.dataset.r === mode));
+    const t0 = mode === 'cyclus' ? Date.UTC(2021, 0, 1) : Date.UTC(2013, 0, 1);
+    const vis = rows.filter((r) => r.t >= t0 && r.rsi != null).concat(live ? [live] : []);
+    const { W, H, svg } = hub.frame(el, narrow ? 340 : 380);
+    const ml = cy.measure(svg, '$100k') + 10, mr = 12, mt = 10, mb = 26, gap = 14;
+    const hP = Math.round((H - mt - mb - gap) * 0.5), yP0 = mt, yR0 = mt + hP + gap, hR = H - mb - yR0;
+    const x = d3.scaleUtc([new Date(t0), new Date(vis[vis.length - 1].t + 4 * 7 * DAY)], [ml, W - mr]);
+    const yp = d3.scaleLog([d3.min(vis, (r) => r.c) * 0.85, d3.max(vis, (r) => r.c) * 1.15], [yP0 + hP, yP0]);
+    const yr = d3.scaleLinear([10, 90], [yR0 + hR, yR0]);
+    // prijsdeel
+    const pt = yp.ticks(4).filter((v) => /^[125]/.test(String(v)));
+    svg.append('g').selectAll('line').data(pt).join('line').attr('class', 'cy-gl').attr('x1', ml).attr('x2', W - mr).attr('y1', yp).attr('y2', yp);
+    svg.append('g').selectAll('text').data(pt).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', yp).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => '$' + d3.format('~s')(d));
+    svg.append('path').attr('fill', 'none').style('stroke', 'var(--color-fg)').attr('stroke-opacity', 0.65).attr('stroke-width', 1.3).attr('d', d3.line((r) => x(new Date(r.t)), (r) => yp(r.c))(vis));
+    // RSI-deel
+    svg.append('rect').attr('class', 'rsi-os').attr('x', ml).attr('width', W - mr - ml).attr('y', yr(30)).attr('height', yr(10) - yr(30));
+    svg.append('rect').attr('class', 'rsi-ob').attr('x', ml).attr('width', W - mr - ml).attr('y', yr(90)).attr('height', yr(70) - yr(90));
+    svg.append('g').selectAll('line').data([30, 50, 70]).join('line').attr('class', (d) => d === 50 ? 'cy-gl' : 'cy-ref').attr('x1', ml).attr('x2', W - mr).attr('y1', yr).attr('y2', yr);
+    svg.append('g').selectAll('text').data([30, 50, 70]).join('text').attr('class', 'cy-tick').attr('x', ml - 6).attr('y', yr).attr('dy', '0.32em').attr('text-anchor', 'end').text((d) => d);
+    svg.append('path').attr('fill', 'none').style('stroke', '#a78bfa').attr('stroke-width', 1.6).attr('d', d3.line((r) => x(new Date(r.t)), (r) => yr(r.rsi))(vis));
+    hub.timeAxis(svg, x, W, H);
+    // bodems en divergenties
+    const lv = lows.filter((q) => q.t >= t0);
+    svg.append('g').selectAll('circle').data(lv).join('circle').attr('r', 3.5).attr('cx', (q) => x(new Date(q.t))).attr('cy', (q) => yr(q.rsi)).attr('class', 'cy-pt k-bodem').style('fill-opacity', (q) => q.prov ? 0.5 : 1);
+    divs.filter(([a]) => a.t >= t0).forEach(([a, b]) => {
+      [[yr, 'rsi'], [yp, 'p']].forEach(([sc, k]) => svg.append('line').attr('x1', x(new Date(a.t))).attr('x2', x(new Date(b.t))).attr('y1', sc(a[k])).attr('y2', sc(b[k])).style('stroke', 'var(--color-ok)').attr('stroke-width', 2.2).attr('stroke-linecap', 'round'));
+      svg.append('text').attr('class', 'cy-lab').attr('x', x(new Date(b.t))).attr('y', yr(b.rsi) + 15).attr('text-anchor', 'middle').text(d3.format('.0f')(b.rsi));
+      svg.append('text').attr('class', 'cy-lab').attr('x', x(new Date(a.t))).attr('y', yr(a.rsi) + 15).attr('text-anchor', 'middle').text(d3.format('.0f')(a.rsi));
+    });
+    svg.append('text').attr('class', 'cy-tick').attr('x', ml + 4).attr('y', yR0 + 10).text('RSI 14w');
+    hub.timeHover(el, svg, W, H, x, vis, (r) => [new Date(r.t).toISOString().slice(0, 10) + (r === live ? ' (lopende week)' : ''), `Weekslot ${usd(Math.round(r.c))}`, `RSI ${d3.format('.1f')(r.rsi)}`]);
+  };
+
   const renderMvrv = () => {
     const rz = realized(); if (!rz) { setText('bz-rp-sub', D.cm === null ? 'laden…' : 'niet bereikbaar'); return; }
     const P = price();
@@ -2709,6 +2810,7 @@ window.bodem = (() => {
       try { renderDeriv(); } catch (e) { console.error(e); }
       try { renderMvrv(); } catch (e) { console.error(e); }
       try { renderPuell(); } catch (e) { console.error(e); }
+      try { renderRsi(); } catch (e) { console.error(e); }
       try { renderFngDips(); } catch (e) { console.error(e); }
     } finally { busy = false; }
   };
@@ -2731,6 +2833,12 @@ window.bodem = (() => {
 </script>
 
 <script>
+// RSI-grafiek: periode kiezen
+document.querySelectorAll('#rsi-range button').forEach((bt) => bt.addEventListener('click', () => {
+  window.btcRsiMode = bt.dataset.r;
+  try { localStorage.setItem('btcRsiRange', bt.dataset.r); } catch (e) { /* */ }
+  if (window.bodem) bodem.render();
+}));
 // Koersgrafiek: periode kiezen (deze cyclus / sinds 2010), onthouden op dit toestel
 document.querySelectorAll('#koers-range button').forEach((bt) => bt.addEventListener('click', () => {
   window.btcKoersMode = bt.dataset.r;
