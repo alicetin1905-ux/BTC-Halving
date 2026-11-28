@@ -5,6 +5,7 @@
 //   variable NTFY_SERVER  eigen ntfy-server (optioneel, standaard https://ntfy.sh)
 //   variable MINER_JTH    gemiddelde efficiëntie van het netwerk in J/TH (optioneel, standaard 22)
 //   variable MINER_KWH    stroomprijs in $/kWh (optioneel, standaard 0.05)
+// Extra signalen (tellen niet mee in de score): dip van 20%, 10+ dagen extreme angst, bullish divergentie op de weekly RSI.
 // Daarnaast: een melding bij een nieuwe cyclus-low (koers onder de laagste koers sinds de top, in stappen van 2%).
 // MODE=status stuurt altijd een overzicht (om te testen). DRY_RUN=1 toont het bericht zonder te versturen.
 // De vorige toestand staat in STATE_FILE (de workflow bewaart die tussen runs in de Actions-cache).
@@ -63,6 +64,33 @@ const loadAll = async () => {
 
 // ---- signalen (zelfde definities als het dashboard) ----
 // Elk signaal: value + on(v) + off(v). Een kleine marge tussen aan en uit voorkomt een melding bij elke schommeling.
+// Wekelijkse RSI (14) op de zondagsluitingen, met bullish divergenties (zelfde regels als het dashboard):
+// RSI-bodem = laagste RSI binnen ±6 weken en onder 40 (de laatste mag voorlopig zijn); divergentie = twee opeenvolgende
+// bodems binnen 60 weken waarbij de prijs (laagste dagslot ±7 dagen) lager of gelijk is (max +2%) en de RSI minstens 2 hoger.
+export const weeklyRsi = (daily, now = Date.now()) => {
+  const wk = daily.filter((r) => new Date(r.t).getUTCDay() === 0 && r.t + DAY <= now);
+  const N = 14; let g = 0, l = 0;
+  const rows = wk.map((w, i) => {
+    if (!i) return { ...w, rsi: null };
+    const ch = w.close - wk[i - 1].close, up = Math.max(ch, 0), dn = Math.max(-ch, 0);
+    if (i <= N) { g += up / N; l += dn / N; } else { g = (g * (N - 1) + up) / N; l = (l * (N - 1) + dn) / N; }
+    return { ...w, rsi: i >= N ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null };
+  });
+  const dlow = (t) => Math.min(...daily.filter((d) => Math.abs(d.t - t) <= 7 * DAY).map((d) => d.close));
+  const lows = [];
+  rows.forEach((r, i) => {
+    if (r.rsi == null || r.rsi >= 40) return;
+    if (rows.slice(Math.max(0, i - 6), i + 7).every((q) => q.rsi == null || q.rsi >= r.rsi)) lows.push({ ...r, p: dlow(r.t), prov: i > rows.length - 7 });
+  });
+  const divs = [];
+  for (let k = 1; k < lows.length; k++) {
+    const a = lows[k - 1], b = lows[k];
+    if (b.t - a.t <= 60 * 7 * DAY && b.p <= a.p * 1.02 && b.rsi >= a.rsi + 2) divs.push([a, b]);
+  }
+  const recent = divs.filter(([, b]) => b.t >= now - 52 * 7 * DAY);
+  return { last: rows[rows.length - 1], recent };
+};
+
 const NL = { 'Extreme Fear': 'extreme angst', Fear: 'angst', Neutral: 'neutraal', Greed: 'hebzucht', 'Extreme Greed': 'extreme hebzucht' };
 export const signals = (d, cfg = {}) => {
   const jth = +cfg.jth || 22, kwh = +cfg.kwh || 0.05;
@@ -76,6 +104,14 @@ export const signals = (d, cfg = {}) => {
     }
     const hi = Math.max(...d.daily.slice(-120).map((r) => r.close), P), v = P / hi - 1;
     out.push({ id: 'dip', name: 'Dip: 20% onder top van 120 dagen', v, on: v < -0.2, off: v > -0.18, txt: `${pct(v)} onder ${fmt(hi)}` });
+    const wr = weeklyRsi(d.daily);
+    if (wr.last && wr.last.rsi != null) {
+      const on = wr.recent.length > 0, chain = on ? [wr.recent[0][0], ...wr.recent.map(([, b]) => b)] : [];
+      const k = (v) => '$' + (v / 1000).toFixed(1).replace('.', ',') + 'k';
+      out.push({ id: 'rsidiv', name: 'Bullish divergentie (weekly RSI)', v: on ? 1 : 0, on, off: !on,
+        txt: on ? `RSI ${chain.map((q) => Math.round(q.rsi)).join(' → ')} bij prijs ${chain.map((q) => k(q.p)).join(' → ')}${chain[chain.length - 1].prov ? ' (laatste bodem voorlopig)' : ''} · RSI nu ${num(wr.last.rsi, 1)}`
+          : `geen hogere RSI-bodem bij een lagere prijs · RSI nu ${num(wr.last.rsi, 1)}` });
+    }
   }
   if (d.cm && d.cm.length && P) {
     const l = d.cm[d.cm.length - 1], rp = l.p / l.mvrv, v = P / rp;
@@ -174,7 +210,7 @@ const main = async () => {
   const prevScore = saved.score;
 
   const byId = new Map(sigs.map((s) => [s.id, s]));
-  const overview = [...SCORE_IDS, 'dip', 'fngstreak'].filter((id) => byId.has(id)).map((id) => { const s = byId.get(id); return `${state[id] ? '🟢' : '⚪'} ${s.name}: ${s.txt}`; });
+  const overview = [...SCORE_IDS, 'dip', 'fngstreak', 'rsidiv'].filter((id) => byId.has(id)).map((id) => { const s = byId.get(id); return `${state[id] ? '🟢' : '⚪'} ${s.name}: ${s.txt}`; });
   const head = `BTC ${fmt(d.price)} · kapitulatiescore ${score}/${known.length}`;
   // nieuwe cyclus-low: de prijs zakt onder de laagste koers sinds de top
   const cl = cycleLow(d.daily, d.price);
