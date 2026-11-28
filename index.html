@@ -529,9 +529,10 @@ window.dash = (() => {
       <span><i class="sw ring bodem"></i>Tussenbodem</span>
       <span><i class="sw halving"></i>Halving</span>
       <span><i class="sw bear"></i>Bearmarkt</span>
-      <span><i class="sw" style="background:var(--color-warn);opacity:.75;border-radius:2px;height:3px;width:14px"></i>Verwacht pad: vorm van de vorige cyclus, naar $126k bij H5 en $180k top</span>
+      <span><i class="sw" style="background:var(--color-warn);opacity:.75;border-radius:2px;height:3px;width:14px"></i>Verwacht pad: vorm van de vorige cyclus, naar $126k bij H5 en $180k top (bolletjes: wanneer het pad $87k en $100k raakt)</span>
     </div>
     <div class="cy-chart" data-draw="chart" data-source="events"></div>
+    <p class="cy-sub" id="koers-lvls"></p>
   </section>
   <section class="cy-card" id="vergelijk">
     <h2>Bearmarkt 2022 vs nu</h2>
@@ -944,8 +945,24 @@ dash.draw('chart', (el) => {
     plot.append('path').attr('fill', 'none').style('stroke', 'var(--color-warn)').attr('stroke-width', path ? 1.8 : 2).attr('stroke-opacity', path ? 0.75 : 1).attr('stroke-dasharray', path ? null : '6 4').attr('stroke-linejoin', 'round')
       .attr('d', d3.line((e) => x(e.t), (e) => y(e.price))(path || [nowP, h5p, pt]));
     proj.push({ e: h5p, color: 'var(--color-warn)', txt: 'H5 ' + cy.usdS(h5p.price) }, { e: pt, color: 'var(--color-bad)', txt: 'top ' + cy.usdS(pt.price) });
-    svg.append('g').selectAll('circle').data(proj).join('circle').attr('r', 5.5).attr('cx', (d) => x(d.e.t)).attr('cy', (d) => y(d.e.price))
-      .style('fill', 'var(--color-panel)').style('stroke', (d) => d.color).attr('stroke-width', 2.2);
+    // tussenniveaus op het gesimuleerde pad: eerste keer dat de lijn $87k en $100k raakt (log-interpolatie tussen twee punten)
+    const line = path || [nowP, h5p, pt], MN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+    [87000, 100000].forEach((L) => {
+      if (nowP.price >= L) return;
+      for (let i = 1; i < line.length; i++) {
+        const p0 = line[i - 1], p1 = line[i];
+        if (p0.price < L && p1.price >= L) {
+          const f = (Math.log(L) - Math.log(p0.price)) / (Math.log(p1.price) - Math.log(p0.price)), t = new Date(+p0.t + f * (p1.t - p0.t));
+          const iso = t.toISOString().slice(0, 10);
+          proj.push({ lvl: true, e: { t, price: L, date: iso, label: `Gesimuleerd pad bereikt ${cy.usdS(L)} (scenario, geen voorspelling)` }, color: 'var(--color-warn)', when: `${MN[t.getUTCMonth()]} ${t.getUTCFullYear()}`, txt: narrow ? cy.usdS(L) : `${cy.usdS(L)} · ${MN[t.getUTCMonth()]} '${String(t.getUTCFullYear()).slice(2)}` });
+          break;
+        }
+      }
+    });
+    const lv = proj.filter((q) => q.lvl), lt = document.getElementById('koers-lvls');
+    if (lt) lt.textContent = lv.length ? `Gesimuleerd pad: ${lv.map((q) => `${cy.usdS(q.e.price)} rond ${q.when}`).join(' · ')} · H5 ${cy.usdS(h5p.price)} rond ${MN[h5p.t.getUTCMonth()]} ${h5p.t.getUTCFullYear()} · top ${cy.usdS(pt.price)} rond ${MN[pt.t.getUTCMonth()]} ${pt.t.getUTCFullYear()} (scenario, geen voorspelling).` : '';
+    svg.append('g').selectAll('circle').data(proj).join('circle').attr('r', (d) => (d.lvl ? 4.5 : 5.5)).attr('cx', (d) => x(d.e.t)).attr('cy', (d) => y(d.e.price))
+      .style('fill', (d) => (d.lvl ? d.color : 'var(--color-panel)')).style('stroke', (d) => (d.lvl ? 'var(--color-panel)' : d.color)).attr('stroke-width', (d) => (d.lvl ? 1.5 : 2.2));
   }
   const vis = pts.filter((d) => inX(d.t));
   svg.append('g').selectAll('path').data(vis).join('path')
@@ -963,14 +980,15 @@ dash.draw('chart', (el) => {
     else if (k === 'bodem') cand.push({ d, txt: cy.usdS(d.price), prio: d.cycle >= 3 ? 1 : 3, pref: 'down' });
     else if (mode === 'cyclus' && (k === 'tussenbodem' || k === 'tussentop')) cand.push({ d, txt: `${M[d.t.getUTCMonth()]} ${cy.usdS(d.price)}`, prio: 4, pref: k === 'tussenbodem' ? 'down' : 'up' });
   });
-  proj.forEach((p) => cand.push({ d: p.e, txt: p.txt, prio: 0.5, pref: 'up', color: p.color }));
+  proj.forEach((p) => cand.push({ d: p.e, txt: p.txt, prio: p.lvl ? 0.6 : 0.5, pref: p.lvl ? 'left' : 'up', color: p.color }));
   const placed = [{ x0: 0, x1: W, y0: 0, y1: mt - 2 }];
   vis.concat(proj.map((q) => q.e)).forEach((d) => { const px = x(d.t), py = y(d.price); placed.push({ x0: px - 6, x1: px + 6, y0: py - 6, y1: py + 6 }); });   // punten zelf vrijhouden
   const hit = (b) => b.x0 < ml - 2 || b.x1 > W - 2 || b.y1 > H - mb + 4 || placed.some((q) => b.x0 < q.x1 && b.x1 > q.x0 && b.y0 < q.y1 && b.y1 > q.y0);
   cand.sort((p, q) => p.prio - q.prio).forEach((c) => {
     const cx = x(c.d.t), cyy = y(c.d.price), w = cy.measure(svg, c.txt) + 6, h = 14;
-    const pos = { up: [cx - w / 2, cyy - 10 - h], down: [cx - w / 2, cyy + 8], left: [cx - 9 - w, cyy - h / 2], right: [cx + 9, cyy - h / 2] };
-    const order = [c.pref, c.pref === 'up' ? 'down' : 'up', 'left', 'right'];
+    const pos = { up: [cx - w / 2, cyy - 10 - h], down: [cx - w / 2, cyy + 8], left: [cx - 9 - w, cyy - h / 2], right: [cx + 9, cyy - h / 2],
+      ul: [cx - w - 4, cyy - 8 - h], ur: [cx + 4, cyy - 8 - h], dl: [cx - w - 4, cyy + 6], dr: [cx + 4, cyy + 6] };
+    const order = [...new Set([c.pref, c.pref === 'up' ? 'down' : 'up', 'left', 'right', 'ul', 'ur', 'dl', 'dr'])];
     for (const o of order) {
       const [bx, by] = pos[o], box = { x0: bx, x1: bx + w, y0: by, y1: by + h };
       if (!hit(box)) {
